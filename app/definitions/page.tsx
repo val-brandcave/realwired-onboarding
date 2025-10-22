@@ -1,7 +1,6 @@
 "use client";
 
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useOnboarding } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 
 export default function UsersPage() {
-  const { state, addUser, deleteUser, updateUsers } = useOnboarding();
+  const { state, addUser, deleteUser } = useOnboarding();
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
   const [formData, setFormData] = useState({ 

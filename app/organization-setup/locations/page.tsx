@@ -58,6 +58,7 @@ export default function LocationsSetupPage() {
     if (state.companySetup.states.length === 0 && applicableStates.length > 0) {
       setSelectedStates(applicableStates);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleState = (stateCode: string) => {

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function OrganizationSetupRequestTypesPage() {
-  const { state, updateDefinitions, updateCompanySetup } = useOnboarding();
+  const { state, updateDefinitions } = useOnboarding();
   const router = useRouter();
   const [twoStepExpanded, setTwoStepExpanded] = useState(false);
   const [oneStepExpanded, setOneStepExpanded] = useState(false);

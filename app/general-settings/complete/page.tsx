@@ -30,7 +30,6 @@ export default function GeneralSettingsCompletePage() {
     >
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-50" aria-hidden="true">
-          {/* eslint-disable @next/next/no-inline-styles -- Dynamic confetti animation requires inline styles */}
           {[...Array(50)].map((_, i) => (
             <div
               key={i}
@@ -50,7 +49,6 @@ export default function GeneralSettingsCompletePage() {
               />
             </div>
           ))}
-          {/* eslint-enable @next/next/no-inline-styles */}
         </div>
       )}
 

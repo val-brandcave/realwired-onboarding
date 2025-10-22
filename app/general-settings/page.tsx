@@ -12,7 +12,6 @@ export default function GeneralSettingsPage() {
   const [vendorResponseDays, setVendorResponseDays] = useState(state.generalSettings.timers.vendorResponseDays);
   const [reviewDueDateDays, setReviewDueDateDays] = useState(state.generalSettings.timers.reviewDueDateDays);
   const [vendorLateDays, setVendorLateDays] = useState(state.generalSettings.timers.vendorLateDays);
-  const [statusMessage, setStatusMessage] = useState("");
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const debouncedSave = (timerUpdates: Partial<typeof state.generalSettings.timers>) => {

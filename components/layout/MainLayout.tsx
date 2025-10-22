@@ -36,20 +36,17 @@ function ProgressBar({ steps }: { steps: Step[] }) {
   
   return (
     <div className="w-full h-1 bg-slate-200">
-      {/* eslint-disable @next/next/no-inline-styles -- Dynamic width for progress bar */}
       <div 
         {...ariaProps}
         className="h-full bg-[#9F2E2B] transition-all duration-700 ease-out"
         style={{ width: `${progressPercent}%` }}
       />
-      {/* eslint-enable @next/next/no-inline-styles */}
     </div>
   );
 }
 
 export function MainLayout({ 
   children, 
-  currentStep = 0, 
   steps = [],
   title = "YouConnect Onboarding",
   showWalkthrough = true

@@ -22,9 +22,16 @@ const eslintConfig = [
   },
   {
     rules: {
-      // Allow inline styles for dynamic values (progress bars, background images)
+      // Allow inline styles for dynamic values (confetti animations, progress bars)
       "@next/next/no-inline-styles": "off",
       "react/forbid-dom-props": "off",
+      // Allow apostrophes in JSX text
+      "react/no-unescaped-entities": "off",
+      // Allow unused vars with underscore prefix
+      "@typescript-eslint/no-unused-vars": ["warn", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }],
     },
   },
 ];

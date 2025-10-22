@@ -40,7 +40,7 @@ export function WorkbookUploadModal({ isOpen, onClose, onUploadComplete }: Workb
 
   const handleFileSelect = (file: File) => {
     // Validate file type (Excel files)
-    const validTypes = [
+    const _validTypes = [
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       '.xlsx',

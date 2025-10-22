@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function OrganizationSetupCompletePage() {
-  const { state, markModuleComplete } = useOnboarding();
+  const { markModuleComplete } = useOnboarding();
   const router = useRouter();
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -34,7 +34,6 @@ export default function OrganizationSetupCompletePage() {
       {/* Confetti Animation */}
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-50" aria-hidden="true">
-          {/* eslint-disable @next/next/no-inline-styles -- Dynamic confetti animation requires inline styles */}
           {[...Array(50)].map((_, i) => (
             <div
               key={i}
@@ -54,7 +53,6 @@ export default function OrganizationSetupCompletePage() {
               />
             </div>
           ))}
-          {/* eslint-enable @next/next/no-inline-styles */}
         </div>
       )}
 

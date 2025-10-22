@@ -8,7 +8,7 @@ import { useState } from "react";
 type RoutingTypeOption = 'request-type' | 'logical' | 'assigned-area';
 
 export default function RoutingSetupPage() {
-  const { state, updateRouting } = useOnboarding();
+  const { updateRouting } = useOnboarding();
   const router = useRouter();
   const [selectedTypes, setSelectedTypes] = useState<RoutingTypeOption[]>([]);
 
