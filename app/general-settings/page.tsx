@@ -3,7 +3,7 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useOnboarding } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 export default function GeneralSettingsPage() {
   const { state, updateGeneralSettings, updateModuleProgress } = useOnboarding();

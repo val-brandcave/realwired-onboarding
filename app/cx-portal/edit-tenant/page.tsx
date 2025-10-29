@@ -96,6 +96,14 @@ interface Notification {
   read: boolean;
 }
 
+type ChecklistStatus = 'completed' | 'in-progress' | 'pending';
+
+interface ChecklistItem {
+  id: string;
+  task: string;
+  status: ChecklistStatus;
+}
+
 const MODULES: Module[] = [
   {
     id: 'organization-setup',
@@ -248,7 +256,7 @@ export default function EditTenantPage() {
   
   // Tab 4: IT Configuration
   const [authMethod, setAuthMethod] = useState<'sso' | 'standard'>('sso');
-  const [ssoIntegrations, setSsoIntegrations] = useState<SsoIntegration[]>([
+  const [ssoIntegrations, _setSsoIntegrations] = useState<SsoIntegration[]>([
     { id: '1', provider: 'okta', certificateUploaded: true, certificateName: 'okta-certificate.cer' }
   ]);
   const [passwordMinLength, setPasswordMinLength] = useState(8);
@@ -257,7 +265,7 @@ export default function EditTenantPage() {
   const [requireLowercase, setRequireLowercase] = useState(true);
   const [requireNumber, setRequireNumber] = useState(true);
   const [requireSpecialChar, setRequireSpecialChar] = useState(false);
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [_showAdvancedOptions, _setShowAdvancedOptions] = useState(false);
   const [ipRestrictionsEnabled, setIpRestrictionsEnabled] = useState(true);
   const [ipWhitelist, setIpWhitelist] = useState<string[]>(["192.168.1.0/24", "10.0.0.1"]);
   const [newIpAddress, setNewIpAddress] = useState("");
@@ -370,10 +378,10 @@ export default function EditTenantPage() {
   const [newVendorEmail, setNewVendorEmail] = useState("");
   const [newVendorPhone, setNewVendorPhone] = useState("");
   const [newVendorLicense, setNewVendorLicense] = useState("");
-  const [vendorTemplateStatus, setVendorTemplateStatus] = useState<'none' | 'uploaded' | 'reviewed'>('uploaded');
+  const [vendorTemplateStatus, _setVendorTemplateStatus] = useState<'none' | 'uploaded' | 'reviewed'>('uploaded');
 
   // Module 5: Routing States
-  const [routingRules, setRoutingRules] = useState([
+  const [routingRules, _setRoutingRules] = useState([
     { id: '1', name: 'Commercial Appraisal Rule', type: 'Request Type', assignee: 'Sarah Johnson', conditions: 'Commercial Appraisal' },
     { id: '2', name: 'West Coast Properties', type: 'Logical', assignee: 'Michael Chen', conditions: 'West Coast, Residential' },
     { id: '3', name: 'Northeast Region', type: 'Assigned Area', assignee: 'Emily Davis', conditions: 'Northeast, Southeast' },
@@ -389,11 +397,11 @@ export default function EditTenantPage() {
   const [bidEngagementPanel, setBidEngagementPanel] = useState('Option 2');
 
   // Module 7: IT Readiness States
-  const [itChecklistItems, setItChecklistItems] = useState([
-    { id: '1', task: 'Whitelist YouConnect URLs', status: 'completed' as const },
-    { id: '2', task: 'Configure email domain', status: 'completed' as const },
-    { id: '3', task: 'Setup SSO integration', status: 'in-progress' as const },
-    { id: '4', task: 'Network security review', status: 'pending' as const },
+  const [itChecklistItems, setItChecklistItems] = useState<ChecklistItem[]>([
+    { id: '1', task: 'Whitelist YouConnect URLs', status: 'completed' },
+    { id: '2', task: 'Configure email domain', status: 'completed' },
+    { id: '3', task: 'Setup SSO integration', status: 'in-progress' },
+    { id: '4', task: 'Network security review', status: 'pending' },
   ]);
 
   // Tickets
@@ -1583,7 +1591,7 @@ export default function EditTenantPage() {
                       />
                       <select
                         value={newMemberRole}
-                        onChange={(e) => setNewMemberRole(e.target.value as any)}
+                        onChange={(e) => setNewMemberRole(e.target.value)}
                         className="px-3 py-2 text-sm border border-slate-300 rounded-lg"
                         aria-label="Team member role"
                       >
@@ -2098,7 +2106,7 @@ export default function EditTenantPage() {
                         </div>
                         <select
                           value={item.status}
-                          onChange={(e) => setItChecklistItems(prev => prev.map(i => i.id === item.id ? {...i, status: e.target.value as any} : i))}
+                          onChange={(e) => setItChecklistItems(prev => prev.map(i => i.id === item.id ? {...i, status: e.target.value as ChecklistStatus} : i))}
                           className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
                           aria-label={`Status for ${item.task}`}
                         >

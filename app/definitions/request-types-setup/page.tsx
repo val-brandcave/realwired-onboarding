@@ -18,7 +18,7 @@ export default function RequestTypesSetupPage() {
     state.definitions.requestCategories || []
   );
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [_editingCategoryId, _setEditingCategoryId] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const [newRequestTypeName, setNewRequestTypeName] = useState('');
   const [newRequestTypeProcess, setNewRequestTypeProcess] = useState<'1-step' | '2-step'>('2-step');

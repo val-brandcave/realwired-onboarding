@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Automated Screenshot Capture Script
  * This script captures screenshots of all pages in the YouConnect onboarding app

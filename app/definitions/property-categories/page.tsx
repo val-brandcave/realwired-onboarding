@@ -17,7 +17,7 @@ export default function PropertyCategoriesPage() {
 
   const [categories, setCategories] = useState<PropertyCategory[]>(state.definitions.propertyCategories);
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [_editingCategoryId, _setEditingCategoryId] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const [newPropertyType, setNewPropertyType] = useState('');
 

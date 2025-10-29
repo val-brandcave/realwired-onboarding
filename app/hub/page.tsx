@@ -222,7 +222,7 @@ export default function HubPage() {
   };
 
   // Generate initials for avatar
-  const getInitials = (name: string) => {
+  const _getInitials = (name: string) => {
     const parts = name.trim().split(' ');
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();

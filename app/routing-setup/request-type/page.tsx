@@ -14,7 +14,7 @@ interface RequestTypeAssignment {
 }
 
 export default function RequestTypeRoutingPage() {
-  const { state, updateRouting, updateModuleProgress } = useOnboarding();
+  const { state: _state, updateRouting, updateModuleProgress } = useOnboarding();
   const router = useRouter();
 
   // Track progress when user lands on this step

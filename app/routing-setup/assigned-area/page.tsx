@@ -4,8 +4,6 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useOnboarding } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import type { RouteRule } from "@/lib/onboarding-context";
-
 interface AssignedArea {
   id: string;
   name: string;
@@ -15,7 +13,7 @@ interface AssignedArea {
 }
 
 export default function AssignedAreaRoutingPage() {
-  const { state, addRoute, deleteRoute, updateRoute, updateRouting, updateModuleProgress } = useOnboarding();
+  const { state: _state, addRoute: _addRoute, deleteRoute: _deleteRoute, updateRoute: _updateRoute, updateRouting, updateModuleProgress } = useOnboarding();
   const router = useRouter();
 
   // Track progress when user lands on this step

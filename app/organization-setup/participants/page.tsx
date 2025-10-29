@@ -3,7 +3,7 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useOnboarding, type OnboardingParticipant } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 // Predefined roles with colors
 const PREDEFINED_ROLES = [

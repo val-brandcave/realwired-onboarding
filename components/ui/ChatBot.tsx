@@ -21,7 +21,7 @@ interface ChatBotProps {
   contextPage?: string; // Which page/module the chat is on
 }
 
-export function ChatBot({ isOpen, onClose, embedded = false, contextPage }: ChatBotProps) {
+export function ChatBot({ isOpen, onClose, embedded = false, contextPage: _contextPage }: ChatBotProps) {
   const messageIdCounter = useRef(0);
   
   const generateUniqueId = () => {

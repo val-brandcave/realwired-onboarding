@@ -8,7 +8,7 @@ import { useState, useRef, useEffect } from "react";
 type UploadStatus = 'none' | 'uploading' | 'in-review' | 'configured';
 
 export default function VendorsPage() {
-  const { state, updateModuleProgress } = useOnboarding();
+  const { state: _state, updateModuleProgress } = useOnboarding();
   const router = useRouter();
 
   // Track progress when user lands on this step
