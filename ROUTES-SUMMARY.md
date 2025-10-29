@@ -1,7 +1,7 @@
 # YouConnect Onboarding Routes
 
-**Last Updated**: October 22, 2025  
-**Implementation Status**: ✅ Fully implemented  
+**Last Updated**: October 29, 2025  
+**Implementation Status**: ✅ Prototype implemented end‑to‑end  
 **Framework**: Next.js 15 (App Router) with React 19 and TypeScript
 
 ---
@@ -15,7 +15,7 @@
 
 ---
 
-## The 5-Module Onboarding Flow
+## The 7-Module Onboarding Flow
 
 ### Module Entry Pattern
 All modules follow the same entry page pattern:
@@ -26,39 +26,50 @@ All modules follow the same entry page pattern:
 
 ---
 
-### 1. Module 1: Organization Setup
+### 1. Module 1: Organization Setup (Redesigned)
 
 **Entry**: `/organization-setup-intro`
 - **Icon**: Building/company icon
 - **Title**: "Let's Set Up Your Organization"
-- **Description**: Configure services, request processes, operating regions, and locations
-- **Time**: 10 minutes
-- **CTA**: → `/organization-setup`
+- **Description**: Configure organization info, branding, participant roster, and baseline security defaults
+- **Time**: 8 minutes
+- **CTA**: → `/organization-setup/org-info`
 
-**Configuration**: `/organization-setup`
-- Service selection (Residential Appraisals, Commercial Appraisals, Environmental Reviews, External Reviews)
-- **Exit**: "Next" → `/organization-setup/request-types`
+**Flow & Routes (in order)**
+- **Organization Info**: `/organization-setup/org-info`
+  - Inputs: Organization name, custom URL (auto-generated from name; editable), industry focus
+  - Education: video player + workbook download
+  - Exit: "Next" → `/organization-setup/branding`
 
-**Request Processes**: `/organization-setup/request-types`
-- Select request processes: 2-Step Appraisal Process, 1-Step Review Only
-- Educational content explaining each process type
-- **Exit**: "Next" → `/organization-setup/regions`
+- **Branding**: `/organization-setup/branding`
+  - Upload primary/secondary logos (optional); pick primary/secondary colors; live preview; "Skip for now" supported
+  - Education: video player + workbook download
+  - Exit: "Continue" → `/organization-setup/participants`
 
-**Regions**: `/organization-setup/regions`
-- 2-column checkbox list of U.S. regions
-- Educational sidebar explains how regions inform routing and dropdowns
-- **Exit**: "Next" → `/organization-setup/locations`
+- **Participants**: `/organization-setup/participants`
+  - Primary decision maker (name + email)
+  - Additional participants with inline add and bulk upload (CSV-style text area)
+  - Auto-generated avatars from names
+  - Education: video player + workbook download
+  - Exit: "Next" → `/organization-setup/it-config`
 
-**Locations**: `/organization-setup/locations`
-- States auto-populated from selected regions; all pre-selected by default
-- 2-column checkbox list of states (with names and codes)
-- Educational sidebar explains state-level configuration
-- **Exit**: "Next" → `/organization-setup/complete`
+- **IT & Security Configuration**: `/organization-setup/it-config`
+  - Authentication selection: Single Sign-On vs standard credentials with password policy controls
+  - SSO integration (provider + certificate upload with simulated validation)
+  - IP restrictions with whitelist (single IP and CIDR ranges)
+  - Session timeout (custom duration, warning thresholds, optional enable)
+  - Exit: "Complete Setup" → `/organization-setup/complete`
 
 **Completion**: `/organization-setup/complete`
 - Confetti animation
 - Success message
 - **CTA**: "See Next Steps" → `/hub` (first time user sees hub)
+
+**Archived (no longer used in Module 1)**
+- `/organization-setup/request-types`
+- `/organization-setup/regions`
+- `/organization-setup/locations`
+> These routes and their UI are archived under `app/organization-setup/_archived/`.
 
 ---
 
@@ -73,18 +84,14 @@ All modules follow the same entry page pattern:
 
 **Hub**: `/definitions`
 - Navigation to sub-flows:
-  - Property Categories → Properties (preview) → Configure Labels → Preview
-  - Request Types → Request Form (preview) → Configure Labels → Preview
+  - Property Categories → Configure labels/types
+  - Request Types → Configure request form fields
 
-**Sub-pages**:
-- `/definitions/property-categories` - Create and edit property category cards (name + type)
-- `/definitions/properties` - Select a sample property with full read-only preview (Overview & Advanced)
-- `/definitions/properties/configure` - Labels-only checkboxes in 2-column layout; editable labels; required fields locked
-- `/definitions/properties/preview` - Preview with custom labels and only selected fields
-- `/definitions/request-types-setup` - Create and edit request type cards (name + category)
-- `/definitions/request-form` - Select a sample request with full read-only preview (Overview, Details, Document Types, Reject Reasons)
-- `/definitions/request-form/configure` - Labels-only checkboxes in 2-column layout; Document Types and Reject Reasons in 2-column
-- `/definitions/request-form/preview` - Preview with custom labels and only selected fields
+**Sub-pages (current)**:
+- `/definitions/property-categories` — Manage categories and types
+- `/definitions/properties/configure` — Configure property record fields (labels + enable/disable)
+- `/definitions/request-types-setup` — Manage request types (name + 1‑step/2‑step)
+- `/definitions/request-form/configure` — Configure request form fields
 
 **Completion**: `/definitions/complete`
 - Confetti animation
@@ -97,28 +104,55 @@ All modules follow the same entry page pattern:
 **Entry**: `/users-intro`
 - **Icon**: Users/team icon
 - **Title**: "Let's Setup Your Team & Groups"
-- **Description**: Add team members, assign roles, and create lending groups
-- **Time**: 12 minutes
+- **Description**: Template-driven workflow to capture team roster and roles for CX configuration
+- **Time**: 5 minutes
 - **CTA**: → `/users`
 
 **Configuration**: `/users`
-- Inline user add/edit interface
-- Role selection (Bank Admin, Job Manager, Loan Officer)
-- Right-rail help panel with role descriptions
-- Optional workbook import
-- **Exit**: "Next" → `/users/lending-groups`
-
-**Lending Groups**: `/users/lending-groups`
-- Create/edit cards with: Group Name, Group Type, Regions (multi), Associated Products (multi)
-- **Exit**: "Complete Setup" → `/users/complete`
+- Step cards guide users through Download Template → Optional CX meeting → Upload Template
+- Template download generates `team-template.csv`
+- Upload status panels progress through Uploading (spinner), In Review (amber pulse), Configured (green check)
+- Upload is required before "Complete Module" CTA is enabled
+- Contact CX Team modal lets users schedule help with templating
+- **Exit**: "Complete Module →" → `/users/complete`
 
 **Completion**: `/users/complete`
 - Confetti animation
+- Updates `users.completed = true`
 - **CTA**: "See Next Steps" → `/hub`
+
+**Legacy Builder (retained for future iteration)**: `/users/lending-groups`
+- Multi-select lending group builder (name, type, regions, products)
+- Not currently linked in primary flow; accessible for demos via direct navigation
 
 ---
 
-### 4. Module 4: Routing
+### 4. Module 4: Vendors
+
+**Entry**: `/vendors-intro`
+- **Icon**: Vendor network icon
+- **Title**: "Let's Setup Your Vendors"
+- **Description**: Template-driven vendor roster to capture contacts, licenses, and coverage areas
+- **Time**: 5 minutes
+- **CTA**: → `/vendors`
+
+**Configuration**: `/vendors`
+- Step cards guide users through Download Template → Optional CX meeting → Upload Template
+- Template download generates `vendor-template.csv` with sample records
+- Upload status panels progress through Uploading (spinner), In Review (amber pulse), Configured (green check)
+- Upload is required before "Complete Module" CTA is enabled
+- Contact CX Team modal mirrors Users module for scheduling help
+- Educational sidebar lists template fields (contact info, licenses, coverage, specialties)
+- **Exit**: "Complete Module →" → `/vendors/complete`
+
+**Completion**: `/vendors/complete`
+- Confetti animation
+- Highlights next recommended modules (Routing, General Settings, IT Checklist)
+- **CTA**: "Return to Hub" → `/hub`
+
+---
+
+### 5. Module 5: Routing
 
 **Entry**: `/routing-intro`
 - **Icon**: Routing/map icon
@@ -127,14 +161,13 @@ All modules follow the same entry page pattern:
 - **Time**: 12 minutes
 - **CTA**: → `/routing-setup`
 
-**Type Selection**: `/routing-setup`
-- Checkbox cards for: Request Type Job Manager (P1), Logical (P2), Assigned Area (P3)
-- Each card shows title, description, example, and a subtle priority badge ("P 1/2/3")
+**Entry to Setup Pages**
+- From `/routing-intro`, navigate directly to setup pages below.
 
 **Route Setup Pages**:
-- `/routing-setup/request-type` (Priority 1): Route Name, Job Manager (single), Request Types (multi)
-- `/routing-setup/logical` (Priority 2): Route Name, Assignee (single), Assign to Copy (multi, optional), Property Categories (multi, required), Request Types (multi), Lending Groups (multi), Locations (multi)
-- `/routing-setup/assigned-area` (Priority 3): Route Name, Job Manager (single), Locations (multi)
+- `/routing-setup/request-type` (Priority 1)
+- `/routing-setup/logical` (Priority 2)
+- `/routing-setup/assigned-area` (Priority 3)
 
 **Route Cards**
 - Show: route name, subtle priority badge (P 1/2/3 with unique colors), type icon, config summary, enable switch, edit/delete
@@ -146,7 +179,7 @@ All modules follow the same entry page pattern:
 
 ---
 
-### 5. Module 5: General Settings
+### 6. Module 6: General Settings
 
 **Entry**: `/general-settings-intro`
 - **Icon**: Settings/gear icon
@@ -168,7 +201,7 @@ All modules follow the same entry page pattern:
 
 ---
 
-### 6. Module 6: IT Readiness Checklist
+### 7. Module 7: IT Readiness Checklist
 
 **Entry**: `/it-checklist-intro`
 - **Icon**: Shield/security icon
@@ -195,14 +228,16 @@ All modules follow the same entry page pattern:
 
 ### Hub: `/hub`
 
-**Purpose**: Central navigation for all 6 modules
+**Purpose**: Central navigation for all 7 modules
 
 **Visibility**: Appears AFTER completing Module 1
 
 **Features**:
-- "Your Next Step" hero card (shows next incomplete module)
-- Video placeholder
-- Complete modules list with progress (X of 6 completed)
+- "Your Next Step" hero card (shows next incomplete module) with participant assignment dropdown
+- Modules list with progress (X of 7 completed)
+- Per-module participant assignment dropdowns (including locked modules); defaults to primary decision maker
+- Completed modules show read-only assignee badge (Module 1 default: primary decision maker)
+- Mini progress bars (200px wide); completed modules show a green bar (100%)
 - Each module shows: icon, title, description, duration
 - Action buttons: "Start" (not completed) or "Edit" (completed)
 
@@ -216,7 +251,7 @@ All modules follow the same entry page pattern:
 
 **Purpose**: Create a sample order to see routing configuration in action
 
-**Visibility**: Accessible after all 6 modules are complete (linked from Hub's all-complete state)
+**Visibility**: Accessible after all 7 modules are complete (linked from Hub's all-complete state)
 
 **Features**:
 - Simple order form with:
@@ -242,6 +277,28 @@ All modules follow the same entry page pattern:
 
 ---
 
+## CX Agent Portal (New)
+
+The CX Agent Portal supports RealWired agents managing multiple bank tenants during onboarding.
+
+### Entry: `/cx-portal`
+- Paginated tenant table with status, progress, due date, tickets
+- Add New Tenant modal (org + primary contact)
+- Notifications panel with unread count and categories (ticket/progress/completion)
+
+### Tenant Onboarding (agent view): `/cx-portal/tenant-onboarding`
+- Left‑rail modules mirror the client flow (Organization Setup, Definitions, Users, Vendors, Routing, General Settings, IT Readiness)
+- Empty states indicating "Waiting for Client Input"
+- Actions: Send Reminder, Fill Out for Client
+
+### Edit Tenant (deep configuration): `/cx-portal/edit-tenant?tenant=Union%20Bank`
+- Module tabs for Organization Setup, Definitions, Users, Vendors, Routing, General Settings, IT Readiness
+- Tickets view with actions (View, Mark as Resolved, Escalate)
+- Notifications slide‑out with mark‑all‑read
+- Accessibility: icon‑only buttons include aria‑labels; forms include labels
+
+---
+
 ## Navigation Flow
 
 ```
@@ -263,11 +320,13 @@ Hub (/hub) ← FIRST TIME SEEING HUB
   │
   ├─> Module 3: Team & Groups (/users-intro → /users → /users/complete → /hub)
   │
-  ├─> Module 4: Routing (/routing-intro → /routing-setup → /routing-setup/complete → /hub)
+  ├─> Module 4: Vendors (/vendors-intro → /vendors → /vendors/complete → /hub)
   │
-  ├─> Module 5: General Settings (/general-settings-intro → /general-settings → /general-settings/complete → /hub)
+  ├─> Module 5: Routing (/routing-intro → /routing-setup → /routing-setup/complete → /hub)
   │
-  └─> Module 6: IT Checklist (/it-checklist-intro → /it-checklist → /it-checklist/complete → /hub)
+  ├─> Module 6: General Settings (/general-settings-intro → /general-settings → /general-settings/complete → /hub)
+  │
+  └─> Module 7: IT Checklist (/it-checklist-intro → /it-checklist → /it-checklist/complete → /hub)
        │
        └─> All Complete → Hub shows celebration + CTAs:
             │
@@ -309,6 +368,10 @@ Location: `/lib/onboarding-context.tsx`
 - `goToModule()` - Navigation with status update
 - `markModuleComplete()` - Marks modules as completed
 - `canProceed()` - Validates exit criteria per module
+- `updateModuleAssignment()` - Manages participant assignments per module (including vendors)
+- `updateModuleProgress()` / `resetModuleProgress()` - Tracks hub progress bars for each module
+
+> Module statuses include `'vendors'`; the Vendors module itself remains template-driven and does not add a dedicated context slice in `OnboardingState`.
 
 ---
 

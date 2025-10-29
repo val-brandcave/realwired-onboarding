@@ -6,14 +6,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function UsersCompletePage() {
-  const { markModuleComplete } = useOnboarding();
+  const { markModuleComplete, updateUsers } = useOnboarding();
   const router = useRouter();
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     setShowConfetti(true);
     markModuleComplete('users');
-  }, [markModuleComplete]);
+    updateUsers({ completed: true });
+  }, [markModuleComplete, updateUsers]);
 
   const steps = [
     { id: '1', label: 'Add Users', status: 'completed' as const },
@@ -25,7 +26,6 @@ export default function UsersCompletePage() {
       currentStep={2} 
       steps={steps}
       title="Setup Users"
-      showWalkthrough={false}
     >
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-50" aria-hidden="true">

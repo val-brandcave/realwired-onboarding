@@ -31,19 +31,25 @@ export default function OrganizationSetupIntroPage() {
               <svg className="w-4 h-4 text-[#9F2E2B] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span>Select which services your organization offers</span>
+              <span>Set up your organization name and custom URL</span>
             </li>
             <li className="flex items-start gap-2 text-slate-600 text-sm">
               <svg className="w-4 h-4 text-[#9F2E2B] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span>Choose your request processes (2-Step, 1-Step)</span>
+              <span>Customize your branding with logos and colors</span>
             </li>
             <li className="flex items-start gap-2 text-slate-600 text-sm">
               <svg className="w-4 h-4 text-[#9F2E2B] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span>Define your regions of operation and state coverage</span>
+              <span>Add onboarding participants and decision makers</span>
+            </li>
+            <li className="flex items-start gap-2 text-slate-600 text-sm">
+              <svg className="w-4 h-4 text-[#9F2E2B] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>Configure IT settings including SSO and security</span>
             </li>
           </ul>
 
@@ -57,7 +63,7 @@ export default function OrganizationSetupIntroPage() {
 
           {/* CTA Button with brand color */}
           <button
-            onClick={() => router.push('/organization-setup')}
+            onClick={() => router.push('/organization-setup/org-info')}
             className="w-full py-3 px-6 text-base font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] focus:outline-none focus:ring-4 focus:ring-[#9F2E2B]/30 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] transform"
           >
             Let's Get Started! →

@@ -9,13 +9,27 @@ export type OnboardingModule =
   | 'company-setup'
   | 'definitions'
   | 'users'
+  | 'vendors'
   | 'routing'
   | 'general-settings'
   | 'it-checklist';
 
 export type ModuleStatus = 'not_started' | 'in_progress' | 'completed';
 
+export interface ModuleAssignment {
+  moduleId: string;
+  assignedParticipantIds: string[]; // IDs of assigned onboarding participants
+}
+
 // MODULE 1: Company Setup
+export interface OnboardingParticipant {
+  id: string;
+  name: string;
+  email: string;
+  role?: string; // Optional department/role (e.g., IT Team, Vendor Relations)
+  avatarColor?: string; // For generated avatars
+}
+
 export interface CompanySetupData {
   hasResidentialAppraisals: boolean;
   hasCommercialAppraisals: boolean;
@@ -24,6 +38,24 @@ export interface CompanySetupData {
   itChecklistComplete: boolean;
   regions: string[]; // Selected regions of operation
   states: string[]; // Selected states based on regions
+  
+  // New fields for redesigned Module 1
+  organizationName?: string;
+  customUrl?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  logoUrl?: string;
+  secondaryLogoUrl?: string;
+  brandingSkipped?: boolean;
+  primaryDecisionMaker?: OnboardingParticipant;
+  additionalParticipants?: OnboardingParticipant[];
+  ssoEnabled?: boolean;
+  ssoProvider?: string;
+  ipRestrictionsEnabled?: boolean;
+  ipWhitelist?: string[];
+  mfaRequired?: boolean;
+  sessionTimeout?: number;
+  
   completed: boolean;
 }
 
@@ -91,17 +123,26 @@ export interface PropertyCategory {
   id: string;
   name: string;
   type: 'Residential' | 'Commercial' | 'Environmental' | 'Agricultural' | 'Other';
+  propertyTypes: string[]; // List of property types under this category
 }
 
 export interface CustomRequestType {
   id: string;
   name: string;
   category: 'Residential' | 'Commercial' | 'Environmental' | 'Agricultural' | 'Other';
+  processType?: '1-step' | '2-step'; // Request process type
+}
+
+export interface RequestCategory {
+  id: string;
+  name: string;
+  requestTypes: CustomRequestType[];
 }
 
 export interface DefinitionsData {
   propertyCategories: PropertyCategory[]; // Custom property categories
   customRequestTypes: CustomRequestType[]; // Custom request types
+  requestCategories: RequestCategory[]; // Request categories with nested request types
   requestTypes: RequestTypeDefinition[];
   properties: PropertyDefinition[];
   propertyRecordFields: PropertyRecordField[]; // New: fields for property records
@@ -225,12 +266,20 @@ export interface ITChecklistData {
 }
 
 
+// Module Progress Tracking (for display in hub)
+export interface ModuleProgress {
+  currentStep: number;  // Current step index (0-based)
+  totalSteps: number;   // Total number of steps in the module
+}
+
 // ========================================
 // COMBINED STATE INTERFACE
 // ========================================
 interface OnboardingState {
   currentModule: OnboardingModule;
   moduleStatuses: Record<OnboardingModule, ModuleStatus>;
+  moduleAssignments: ModuleAssignment[]; // NEW: Track which participants are assigned to each module
+  moduleProgress: Record<string, ModuleProgress>; // NEW: Track progress for display in hub
   companySetup: CompanySetupData;
   definitions: DefinitionsData;
   users: UsersData;
@@ -257,6 +306,9 @@ interface OnboardingContextType {
   goToModule: (module: OnboardingModule) => void;
   markModuleComplete: (module: OnboardingModule) => void;
   canProceed: (module: OnboardingModule) => boolean;
+  updateModuleAssignment: (moduleId: string, participantIds: string[]) => void;
+  updateModuleProgress: (moduleId: string, currentStep: number, totalSteps: number) => void; // NEW
+  resetModuleProgress: (moduleId: string) => void; // NEW
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -268,10 +320,21 @@ const initialState: OnboardingState = {
     'company-setup': 'not_started',
     'definitions': 'not_started',
     'users': 'not_started',
+    'vendors': 'not_started',
     'routing': 'not_started',
     'general-settings': 'not_started',
     'it-checklist': 'not_started',
   },
+  moduleAssignments: [
+    { moduleId: 'company-setup', assignedParticipantIds: ['primary-decision-maker'] },
+    { moduleId: 'definitions', assignedParticipantIds: ['primary-decision-maker'] },
+    { moduleId: 'users', assignedParticipantIds: ['primary-decision-maker'] },
+    { moduleId: 'vendors', assignedParticipantIds: ['primary-decision-maker'] },
+    { moduleId: 'routing', assignedParticipantIds: ['primary-decision-maker'] },
+    { moduleId: 'general-settings', assignedParticipantIds: ['primary-decision-maker'] },
+    { moduleId: 'it-checklist', assignedParticipantIds: ['primary-decision-maker'] },
+  ],
+  moduleProgress: {}, // Initialize empty - will be populated as user progresses
   companySetup: {
     hasResidentialAppraisals: false,
     hasCommercialAppraisals: false,
@@ -280,19 +343,106 @@ const initialState: OnboardingState = {
     itChecklistComplete: false,
     regions: [],
     states: [],
-    completed: false,
+    organizationName: 'Union Bank',
+    customUrl: 'union-bank',
+    // Sample participants for assignment (available regardless of user input)
+    primaryDecisionMaker: {
+      id: 'primary-decision-maker',
+      name: 'John Smith',
+      email: 'john.smith@unionbank.com',
+      avatarColor: '#9F2E2B'
+    },
+    additionalParticipants: [
+      {
+        id: 'participant-2',
+        name: 'Sarah Johnson',
+        email: 'sarah.johnson@unionbank.com',
+        role: 'IT Team',
+        avatarColor: '#3B82F6'
+      },
+      {
+        id: 'participant-3',
+        name: 'Michael Chen',
+        email: 'michael.chen@unionbank.com',
+        role: 'Vendor Relations',
+        avatarColor: '#10B981'
+      },
+      {
+        id: 'participant-4',
+        name: 'Emily Davis',
+        email: 'emily.davis@unionbank.com',
+        role: 'Operations',
+        avatarColor: '#F59E0B'
+      },
+      {
+        id: 'participant-5',
+        name: 'Robert Wilson',
+        email: 'robert.wilson@unionbank.com',
+        role: 'Compliance',
+        avatarColor: '#8B5CF6'
+      }
+    ],
+    completed: false, // Module 1 is NOT completed initially
   },
   definitions: {
     propertyCategories: [
-      { id: 'cat-1', name: 'Single Family Residential', type: 'Residential' },
-      { id: 'cat-2', name: 'Multi-Family Residential', type: 'Residential' },
-      { id: 'cat-3', name: 'Commercial Office', type: 'Commercial' },
-      { id: 'cat-4', name: 'Commercial Retail', type: 'Commercial' },
+      { 
+        id: 'cat-1', 
+        name: 'Single Family Residential', 
+        type: 'Residential',
+        propertyTypes: [
+          'Single Family - Detached',
+          'Single Family - Attached',
+          'Townhouse',
+          'Condominium',
+          'Mobile Home'
+        ]
+      },
+      { 
+        id: 'cat-2', 
+        name: 'Commercial Property', 
+        type: 'Commercial',
+        propertyTypes: [
+          'Office Building',
+          'Retail Center',
+          'Industrial Warehouse',
+          'Mixed-Use Development',
+          'Hotel/Hospitality'
+        ]
+      },
     ],
     customRequestTypes: [
       { id: 'rt-1', name: 'Residential Appraisal', category: 'Residential' },
       { id: 'rt-2', name: 'Commercial Appraisal', category: 'Commercial' },
       { id: 'rt-3', name: 'BPO (Broker Price Opinion)', category: 'Residential' },
+    ],
+    requestCategories: [
+      {
+        id: 'req-cat-1',
+        name: 'Appraisal',
+        requestTypes: [
+          { id: 'rt-app-1', name: 'Appraisal (Internal)', category: 'Residential', processType: '2-step' },
+          { id: 'rt-app-2', name: 'Commercial Appraisal', category: 'Commercial', processType: '2-step' },
+          { id: 'rt-app-3', name: 'Commercial Evaluation (External)', category: 'Commercial', processType: '1-step' },
+          { id: 'rt-app-4', name: 'In-House Evaluation', category: 'Residential', processType: '1-step' },
+          { id: 'rt-app-5', name: 'Residential Appraisal (1-4 Family)', category: 'Residential', processType: '2-step' },
+          { id: 'rt-app-6', name: 'Review', category: 'Other', processType: '1-step' },
+          { id: 'rt-app-7', name: 'Validity Check', category: 'Other', processType: '1-step' },
+        ]
+      },
+      {
+        id: 'req-cat-2',
+        name: 'Environmental',
+        requestTypes: [
+          { id: 'rt-env-1', name: 'ESA I PNA', category: 'Environmental', processType: '2-step' },
+          { id: 'rt-env-2', name: 'ESA I PNA (SBL)', category: 'Environmental', processType: '2-step' },
+          { id: 'rt-env-3', name: 'Environmental Records Search', category: 'Environmental', processType: '1-step' },
+          { id: 'rt-env-4', name: 'Environmental Records Search - Risk Assessment - SBA', category: 'Environmental', processType: '2-step' },
+          { id: 'rt-env-5', name: 'Environmental Questionnaire Review', category: 'Environmental', processType: '1-step' },
+          { id: 'rt-env-6', name: 'Environmental Assessment', category: 'Environmental', processType: '2-step' },
+          { id: 'rt-env-7', name: '(HUD) Radon / Fall Study / FFRMS / Green / Noise', category: 'Environmental', processType: '2-step' },
+        ]
+      }
     ],
     requestTypes: [
       {
@@ -588,6 +738,37 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const updateModuleAssignment = useCallback((moduleId: string, participantIds: string[]) => {
+    setState(prev => ({
+      ...prev,
+      moduleAssignments: prev.moduleAssignments.map(assignment =>
+        assignment.moduleId === moduleId
+          ? { ...assignment, assignedParticipantIds: participantIds }
+          : assignment
+      ),
+    }));
+  }, []);
+
+  const updateModuleProgress = useCallback((moduleId: string, currentStep: number, totalSteps: number) => {
+    setState(prev => ({
+      ...prev,
+      moduleProgress: {
+        ...prev.moduleProgress,
+        [moduleId]: { currentStep, totalSteps },
+      },
+    }));
+  }, []);
+
+  const resetModuleProgress = useCallback((moduleId: string) => {
+    setState(prev => {
+      const newProgress = { ...prev.moduleProgress };
+      delete newProgress[moduleId];
+      return {
+        ...prev,
+        moduleProgress: newProgress,
+      };
+    });
+  }, []);
 
   const canProceed = useCallback((module: OnboardingModule): boolean => {
     const s = state;
@@ -639,6 +820,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         goToModule,
         markModuleComplete,
         canProceed,
+        updateModuleAssignment,
+        updateModuleProgress,
+        resetModuleProgress,
       }}
     >
       {children}

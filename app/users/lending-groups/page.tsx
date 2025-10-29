@@ -3,7 +3,7 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useOnboarding } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { LendingGroup } from "@/lib/onboarding-context";
 
 // Multi-select component for regions and products
@@ -95,8 +95,13 @@ function MultiSelect({
 }
 
 export default function LendingGroupsPage() {
-  const { state, updateUsers } = useOnboarding();
+  const { state, updateUsers, updateModuleProgress } = useOnboarding();
   const router = useRouter();
+
+  // Track progress when user lands on this step
+  useEffect(() => {
+    updateModuleProgress('users', 2, 2); // Step 2 of 2 - 100%
+  }, [updateModuleProgress]);
 
   const [isCreating, setIsCreating] = useState(false);
   const [editingGroup, setEditingGroup] = useState<LendingGroup | null>(null);
@@ -201,7 +206,6 @@ export default function LendingGroupsPage() {
       currentStep={1} 
       steps={steps}
       title="Team & Groups Setup"
-      showWalkthrough={false}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-8">

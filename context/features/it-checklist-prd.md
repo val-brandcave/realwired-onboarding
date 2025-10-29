@@ -1,8 +1,8 @@
 # IT Readiness Checklist - PRD
 
 ## Overview
-- Module: 6
-- Purpose: Confirm the bank’s IT team has completed essential setup tasks to ensure successful access to YouConnect and email notifications.
+- Module: 7
+- Purpose: Confirm the bank's IT team has completed essential setup tasks to ensure successful access to YouConnect and email notifications.
 - Entry: `/it-checklist-intro`
 - Config: `/it-checklist`
 - Complete: `/it-checklist/complete`
@@ -25,7 +25,7 @@
 - UX:
   - Informational banner explaining why IT readiness matters
   - Two checkboxes with concise explanations and guidance
-  - “Complete IT Checklist” button enabled only when both are checked
+- "Complete IT Checklist" button enabled only when both are checked
 - State:
   - `itChecklist.emailDomainsAllowlisted: boolean`
   - `itChecklist.urlAccessVerified: boolean`

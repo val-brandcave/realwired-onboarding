@@ -6,14 +6,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function RoutingCompletePage() {
-  const { markModuleComplete } = useOnboarding();
+  const { markModuleComplete, updateRouting } = useOnboarding();
   const router = useRouter();
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     setShowConfetti(true);
     markModuleComplete('routing');
-  }, [markModuleComplete]);
+    updateRouting({ completed: true });
+  }, [markModuleComplete, updateRouting]);
 
   const steps = [
     { id: '1', label: 'Create Routes', status: 'completed' as const },
@@ -25,7 +26,6 @@ export default function RoutingCompletePage() {
       currentStep={2} 
       steps={steps}
       title="Routing"
-      showWalkthrough={false}
     >
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-50" aria-hidden="true">

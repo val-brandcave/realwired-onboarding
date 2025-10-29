@@ -1,7 +1,7 @@
 # Test Order (Post-Completion) - PRD
 
 ## Overview
-- Trigger: Hub “All Complete” state after Modules 1–6
+- Trigger: Hub "All Complete" state after Modules 1-7
 - Entry: CTA from Hub → `/test-order`
 - Purpose: Let users create a sample order to validate routing configuration end-to-end.
 

@@ -6,30 +6,33 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function OrganizationSetupCompletePage() {
-  const { markModuleComplete } = useOnboarding();
+  const { markModuleComplete, updateCompanySetup } = useOnboarding();
   const router = useRouter();
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     setShowConfetti(true);
     markModuleComplete('company-setup');
-  }, [markModuleComplete]);
+    // Also update the companySetup.completed flag
+    updateCompanySetup({ completed: true });
+  }, [markModuleComplete, updateCompanySetup]);
 
   const handleContinue = () => {
     router.push('/hub');
   };
 
   const steps = [
-    { id: '1', label: 'Services', status: 'completed' as const },
-    { id: '2', label: 'Request Processes', status: 'completed' as const },
+    { id: '1', label: 'Organization Info', status: 'completed' as const },
+    { id: '2', label: 'Branding', status: 'completed' as const },
+    { id: '3', label: 'Participants', status: 'completed' as const },
+    { id: '4', label: 'IT Config', status: 'completed' as const },
   ];
 
   return (
     <MainLayout 
-      currentStep={2} 
+      currentStep={4} 
       steps={steps}
       title="Organization Setup"
-      showWalkthrough={false}
     >
       {/* Confetti Animation */}
       {showConfetti && (

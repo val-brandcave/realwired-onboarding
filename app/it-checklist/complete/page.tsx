@@ -6,11 +6,12 @@ import { useEffect } from "react";
 
 export default function ITChecklistComplete() {
   const router = useRouter();
-  const { markModuleComplete } = useOnboarding();
+  const { markModuleComplete, updateITChecklist } = useOnboarding();
 
   useEffect(() => {
     markModuleComplete('it-checklist');
-  }, [markModuleComplete]);
+    updateITChecklist({ completed: true });
+  }, [markModuleComplete, updateITChecklist]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-green-50 p-4 relative overflow-hidden">

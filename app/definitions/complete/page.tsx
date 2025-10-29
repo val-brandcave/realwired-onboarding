@@ -6,26 +6,28 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function DefinitionsCompletePage() {
-  const { markModuleComplete } = useOnboarding();
+  const { markModuleComplete, updateDefinitions } = useOnboarding();
   const router = useRouter();
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     setShowConfetti(true);
     markModuleComplete('definitions');
-  }, [markModuleComplete]);
+    updateDefinitions({ completed: true });
+  }, [markModuleComplete, updateDefinitions]);
 
   const steps = [
-    { id: '1', label: 'Properties', status: 'completed' as const },
-    { id: '2', label: 'Order Form', status: 'completed' as const },
+    { id: '1', label: 'Property Categories', status: 'completed' as const },
+    { id: '2', label: 'Property Fields', status: 'completed' as const },
+    { id: '3', label: 'Request Types', status: 'completed' as const },
+    { id: '4', label: 'Request Form', status: 'completed' as const },
   ];
 
   return (
     <MainLayout 
-      currentStep={2} 
+      currentStep={4} 
       steps={steps}
       title="Definitions"
-      showWalkthrough={false}
     >
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-50" aria-hidden="true">
@@ -73,7 +75,7 @@ export default function DefinitionsCompletePage() {
             </h1>
 
             <p className="text-sm text-muted-foreground mb-6">
-              Excellent! Your request types, properties, and order form are all configured.
+              Excellent! Your property categories, fields, request types, and form fields are all configured.
             </p>
 
             <button

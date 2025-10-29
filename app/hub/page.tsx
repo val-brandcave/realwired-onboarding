@@ -1,9 +1,11 @@
 "use client";
 
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useOnboarding } from "@/lib/onboarding-context";
+import { useOnboarding, type OnboardingParticipant } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { ParticipantSelector } from "./_components/ParticipantSelector";
+import { Snackbar } from "@/components/ui/Snackbar";
 
 // Contact Modal Component
 function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -171,10 +173,79 @@ function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 }
 
 export default function HubPage() {
-  const { state } = useOnboarding();
+  const { state, updateModuleAssignment, resetModuleProgress } = useOnboarding();
   const router = useRouter();
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [showSnackbar, setShowSnackbar] = useState(false);
+
+  // Get all participants (primary + additional)
+  const allParticipants = useMemo(() => {
+    const participants: OnboardingParticipant[] = [];
+    if (state.companySetup.primaryDecisionMaker) {
+      participants.push(state.companySetup.primaryDecisionMaker);
+    }
+    if (state.companySetup.additionalParticipants) {
+      participants.push(...state.companySetup.additionalParticipants);
+    }
+    return participants;
+  }, [state.companySetup.primaryDecisionMaker, state.companySetup.additionalParticipants]);
+
+  // Calculate module progress based on step tracking
+  const getModuleProgress = (moduleId: string) => {
+    const progress = state.moduleProgress[moduleId];
+    if (!progress) return 0;
+    
+    // Calculate percentage: (currentStep / totalSteps) * 100
+    // If currentStep === totalSteps, they've completed all steps
+    const percentage = Math.round((progress.currentStep / progress.totalSteps) * 100);
+    return percentage;
+  };
+
+  // Get progress details for display
+  const getProgressDetails = (moduleId: string) => {
+    const progress = state.moduleProgress[moduleId];
+    if (!progress) return null;
+    
+    return {
+      currentStep: progress.currentStep,
+      totalSteps: progress.totalSteps,
+      percentage: Math.round((progress.currentStep / progress.totalSteps) * 100),
+    };
+  };
+
+  // Handle module start - reset progress when starting a module
+  const handleModuleStart = (modulePath: string, moduleId: string) => {
+    resetModuleProgress(moduleId);
+    router.push(modulePath);
+  };
+
+  // Generate initials for avatar
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  // Get assigned participants for a module
+  const getModuleParticipants = (moduleId: string) => {
+    const assignment = state.moduleAssignments?.find(a => a.moduleId === moduleId);
+    return assignment?.assignedParticipantIds || ['primary-decision-maker'];
+  };
+
+  // Handle assignment with snackbar notification
+  const handleAssignment = (moduleId: string, moduleTitle: string) => (selectedIds: string[]) => {
+    updateModuleAssignment(moduleId, selectedIds);
+    const participantNames = allParticipants
+      .filter(p => selectedIds.includes(p.id))
+      .map(p => p.name)
+      .join(', ');
+    setSnackbarMessage(`Participants assigned to ${moduleTitle}: ${participantNames}`);
+    setShowSnackbar(true);
+  };
 
   // Define the 6 modules
   const modules = [
@@ -182,10 +253,10 @@ export default function HubPage() {
       id: 'organization-setup',
       moduleNumber: 1,
       title: 'Organization Setup',
-      description: 'Configure services, request processes, operating regions, and locations',
+      description: 'Set up organization info, branding, onboarding participants, and IT configuration',
       completed: state.companySetup.completed,
       path: '/organization-setup-intro',
-      duration: '10 min',
+      duration: '8 min',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -209,11 +280,11 @@ export default function HubPage() {
     {
       id: 'users',
       moduleNumber: 3,
-      title: 'Team & Groups',
-      description: 'Add team members, assign roles, and create lending groups for organization',
+      title: 'Users Setup',
+      description: 'Download template, fill in team details, and upload for CX team configuration',
       completed: state.users.completed,
       path: '/users-intro',
-      duration: '12 min',
+      duration: '5 min',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -221,8 +292,22 @@ export default function HubPage() {
       ),
     },
     {
-      id: 'routing',
+      id: 'vendors',
       moduleNumber: 4,
+      title: 'Vendors Setup',
+      description: 'Download template, configure vendor network, and upload for CX team setup',
+      completed: state.moduleStatuses['vendors'] === 'completed',
+      path: '/vendors-intro',
+      duration: '5 min',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      ),
+    },
+    {
+      id: 'routing',
+      moduleNumber: 5,
       title: 'Routing',
       description: 'Create routing rules to automatically assign orders (Request Type, Logical, Assigned Area)',
       completed: state.routing.completed,
@@ -236,7 +321,7 @@ export default function HubPage() {
     },
     {
       id: 'general-settings',
-      moduleNumber: 5,
+      moduleNumber: 6,
       title: 'General Settings',
       description: 'Configure workflow timers, notifications, and bid engagement panel settings',
       completed: state.generalSettings.completed,
@@ -251,7 +336,7 @@ export default function HubPage() {
     },
     {
       id: 'it-checklist',
-      moduleNumber: 6,
+      moduleNumber: 7,
       title: 'IT Readiness Checklist',
       description: 'Ensure your team can access YouConnect without technical issues',
       completed: state.itChecklist.completed,
@@ -267,12 +352,17 @@ export default function HubPage() {
 
   const completedModules = modules.filter(m => m.completed).length;
   const nextModule = modules.find(m => !m.completed);
+  const module1Completed = modules[0].completed;
   
   // Determine status for each module
   const getModuleStatus = (module: typeof modules[0], index: number) => {
     if (module.completed) return 'completed';
-    if (index === 0 || modules[index - 1].completed) return 'ready';
-    return 'locked';
+    // Module 1 is always ready
+    if (index === 0) return 'ready';
+    // All other modules are locked until module 1 is complete
+    if (!module1Completed) return 'locked';
+    // After module 1 is complete, all modules are unlocked
+    return 'ready';
   };
 
   return (
@@ -280,7 +370,6 @@ export default function HubPage() {
       currentStep={0} 
       steps={[]}
       title="YouConnect Onboarding Hub"
-      showWalkthrough={false}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Next Step Hero Card (Combined Content + Video) */}
@@ -304,12 +393,25 @@ export default function HubPage() {
                   {nextModule.description}
                 </p>
                 
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
                   <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>Estimated time: <strong>{nextModule.duration}</strong></span>
                 </div>
+
+                {/* Participant Assignment for Next Module */}
+                {allParticipants.length > 0 && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xs text-muted-foreground">Assigned to:</span>
+                    <ParticipantSelector
+                      participants={allParticipants}
+                      selectedIds={getModuleParticipants(nextModule.id)}
+                      onChange={(ids) => updateModuleAssignment(nextModule.id, ids)}
+                      moduleTitle={nextModule.title}
+                    />
+                  </div>
+                )}
 
                 <button
                   onClick={() => router.push(nextModule.path)}
@@ -352,7 +454,7 @@ export default function HubPage() {
             </div>
 
             {/* What Else You Can Do */}
-            <div className="max-w-3xl mx-auto space-y-3">
+            <div className="max-w-2xl mx-auto">
               {/* Schedule Meeting */}
               <div className="bg-white rounded-lg p-5 border border-border">
                 <div className="flex items-start gap-3">
@@ -373,31 +475,6 @@ export default function HubPage() {
                       className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md hover:shadow-lg"
                     >
                       Schedule Meeting →
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Test Order */}
-              <div className="bg-white rounded-lg p-5 border border-border">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-semibold text-foreground mb-1.5">
-                      Want to test a sample order flow?
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Walk through a complete order from submission to approval to see how your configuration works in action.
-                    </p>
-                    <button
-                      onClick={() => router.push('/test-order')}
-                      className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md hover:shadow-lg"
-                    >
-                      Create Test Order →
                     </button>
                   </div>
                 </div>
@@ -448,7 +525,7 @@ export default function HubPage() {
                       module.completed 
                         ? 'bg-primary/5 border-primary/30' 
                         : isLocked
-                        ? 'bg-muted/20 border-border opacity-60'
+                        ? 'bg-muted/20 border-border opacity-50'
                         : 'bg-card border-border hover:border-primary/30'
                     }`}
                   >
@@ -479,27 +556,89 @@ export default function HubPage() {
                         <span className="px-1.5 py-0.5 bg-slate-100 text-slate-700 text-xs font-medium rounded">
                           Module {module.moduleNumber}
                         </span>
-                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
+                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded flex items-center gap-1 ${
                           status === 'completed' 
                             ? 'bg-green-100 text-green-700' 
                             : status === 'ready'
                             ? 'bg-blue-100 text-blue-700'
                             : 'bg-slate-100 text-slate-500'
                         }`}>
-                          {status === 'completed' ? '✓ Completed' : status === 'ready' ? 'Ready' : '🔒 Locked'}
+                          {status === 'completed' ? '✓ Completed' : status === 'ready' ? 'Ready' : (
+                            <>
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                              </svg>
+                              Locked
+                            </>
+                          )}
                         </span>
                         <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-xs font-medium rounded">
                           {module.duration}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground">{module.description}</p>
+                      <p className="text-xs text-muted-foreground mb-2">{module.description}</p>
+                      
+                      {/* Progress Bar and Participant Assignment Row */}
+                      <div className="flex items-center gap-4 flex-wrap">
+                        {/* Progress Bar */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-muted-foreground">Progress:</span>
+                          <div className="w-[200px] bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                module.completed ? 'bg-green-500' : 'bg-amber-500'
+                              }`}
+                              style={{ width: `${getModuleProgress(module.id)}%` } as React.CSSProperties}
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-semibold text-foreground">{getModuleProgress(module.id)}%</span>
+                            {getProgressDetails(module.id) && (
+                              <span className="text-xs text-muted-foreground">
+                                ({getProgressDetails(module.id)!.currentStep}/{getProgressDetails(module.id)!.totalSteps} steps)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Participant Assignment */}
+                        {allParticipants.length > 0 && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Assigned:</span>
+                            {module.id === 'organization-setup' ? (
+                              // Module 1 - show read-only assignee (John Smith)
+                              <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border border-border">
+                                <div
+                                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                                  style={{ backgroundColor: '#9F2E2B' }}
+                                >
+                                  JS
+                                </div>
+                                <span className="text-xs font-medium text-foreground">
+                                  John Smith
+                                </span>
+                              </div>
+                            ) : (
+                              // Other modules - editable dropdown with Assign button (only if module 1 is complete)
+                              <ParticipantSelector
+                                participants={allParticipants}
+                                selectedIds={getModuleParticipants(module.id)}
+                                onChange={(ids) => updateModuleAssignment(module.id, ids)}
+                                onAssign={handleAssignment(module.id, module.title)}
+                                moduleTitle={module.title}
+                                disabled={!module1Completed}
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Action Button - More Prominent */}
                     <div className="flex-shrink-0">
                       {module.completed ? (
                         <button
-                          onClick={() => router.push(module.path)}
+                          onClick={() => handleModuleStart(module.path, module.id)}
                           className="px-4 py-2 text-sm font-semibold text-secondary-foreground bg-white border-2 border-border rounded-lg hover:bg-accent hover:border-primary/30 transition-all shadow-sm hover:shadow"
                         >
                           Edit
@@ -507,16 +646,19 @@ export default function HubPage() {
                       ) : isLocked ? (
                         <button
                           disabled
-                          className="px-4 py-2 text-sm font-semibold text-muted-foreground bg-muted rounded-lg cursor-not-allowed"
+                          className="p-2 text-muted-foreground bg-muted rounded-lg cursor-not-allowed opacity-60"
+                          title="Module locked"
                         >
-                          Locked
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
                         </button>
                       ) : (
                         <button
-                          onClick={() => router.push(module.path)}
+                          onClick={() => handleModuleStart(module.path, module.id)}
                           className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md hover:shadow-lg"
                         >
-                          Start →
+                          {getProgressDetails(module.id) ? 'Continue →' : 'Start →'}
                         </button>
                       )}
                     </div>
@@ -527,6 +669,14 @@ export default function HubPage() {
           )}
         </div>
       </div>
+
+      {/* Snackbar Notifications */}
+      <Snackbar
+        message={snackbarMessage}
+        isVisible={showSnackbar}
+        onClose={() => setShowSnackbar(false)}
+        type="success"
+      />
     </MainLayout>
   );
 }

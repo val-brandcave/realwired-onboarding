@@ -26,7 +26,6 @@ export default function GeneralSettingsCompletePage() {
       currentStep={3} 
       steps={steps}
       title="General Settings"
-      showWalkthrough={false}
     >
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-50" aria-hidden="true">

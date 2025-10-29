@@ -17,7 +17,6 @@ export default function DefinitionsPage() {
       currentStep={0} 
       steps={[]}
       title="Definitions"
-      showWalkthrough={false}
     >
       <div className="flex items-center justify-center min-h-[400px]">
         <p className="text-muted-foreground">Redirecting...</p>

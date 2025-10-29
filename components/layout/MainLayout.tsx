@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
-import { VideoModal } from '@/components/ui/VideoModal';
-import { HelpModal } from '@/components/ui/HelpModal';
+import React from 'react';
+import { FloatingChatButton } from '@/components/ui/FloatingChatButton';
+import { UserProfileDropdown } from './UserProfileDropdown';
 
 interface Step {
   id: string;
@@ -15,7 +15,6 @@ interface MainLayoutProps {
   currentStep?: number;
   steps?: Step[];
   title?: string;
-  showWalkthrough?: boolean;
 }
 
 function ProgressBar({ steps }: { steps: Step[] }) {
@@ -48,11 +47,8 @@ function ProgressBar({ steps }: { steps: Step[] }) {
 export function MainLayout({ 
   children, 
   steps = [],
-  title = "YouConnect Onboarding",
-  showWalkthrough = true
+  title = "YouConnect Onboarding"
 }: MainLayoutProps) {
-  const [showVideo, setShowVideo] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -63,40 +59,20 @@ export function MainLayout({
             <div className="flex items-center justify-between h-14">
               {/* Logo and Title */}
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">YC</span>
+                <div className="w-10 h-10 flex items-center justify-center">
+                  <img 
+                    src="/realwired-logo.png" 
+                    alt="RealWired Logo" 
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div>
                   <h1 className="text-base font-semibold text-foreground">{title}</h1>
                 </div>
               </div>
 
-              {/* Right side - Action buttons */}
-              <div className="flex items-center gap-2">
-                {showWalkthrough && (
-                  <button 
-                    onClick={() => setShowVideo(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-[#9F2E2B] bg-[#FDF6F5] border border-[#E8B5B3] rounded-lg hover:bg-[#FBF0EF] hover:border-[#D69692] focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] focus:ring-offset-2 transition-colors"
-                    aria-label="Watch onboarding walkthrough video"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Watch Walkthrough
-                  </button>
-                )}
-                <button 
-                  onClick={() => setShowHelp(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-secondary-foreground bg-card border border-input rounded-lg hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
-                  aria-label="Get help with current section"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Need Help?
-                </button>
-              </div>
+              {/* User Profile */}
+              <UserProfileDropdown />
             </div>
           </div>
         </header>
@@ -119,19 +95,8 @@ export function MainLayout({
         </div>
       </footer>
 
-      {/* Video Modal */}
-      <VideoModal 
-        isOpen={showVideo}
-        onClose={() => setShowVideo(false)}
-        title="Onboarding Setup Walkthrough"
-      />
-
-      {/* Help Modal */}
-      <HelpModal 
-        isOpen={showHelp}
-        onClose={() => setShowHelp(false)}
-        onOpenVideo={() => setShowVideo(true)}
-      />
+      {/* Floating Chat Button - Available on all pages */}
+      <FloatingChatButton />
     </div>
   );
 }

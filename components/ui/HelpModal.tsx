@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { ChatBot } from './ChatBot';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface HelpModalProps {
 }
 
 export function HelpModal({ isOpen, onClose, onOpenVideo }: HelpModalProps) {
+  const [activeTab, setActiveTab] = useState<'chat' | 'contact'>('chat');
   const [formData, setFormData] = useState({
     email: '',
     phone: '',
@@ -56,7 +58,7 @@ export function HelpModal({ isOpen, onClose, onOpenVideo }: HelpModalProps) {
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-xl w-full max-w-4xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -83,7 +85,37 @@ export function HelpModal({ isOpen, onClose, onOpenVideo }: HelpModalProps) {
           </button>
         </div>
 
-        {submitted ? (
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200 bg-white">
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`flex-1 px-6 py-3 text-sm font-semibold transition-colors ${
+              activeTab === 'chat'
+                ? 'text-[#9F2E2B] border-b-2 border-[#9F2E2B] bg-red-50/50'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            💬 Chat Assistant
+          </button>
+          <button
+            onClick={() => setActiveTab('contact')}
+            className={`flex-1 px-6 py-3 text-sm font-semibold transition-colors ${
+              activeTab === 'contact'
+                ? 'text-[#9F2E2B] border-b-2 border-[#9F2E2B] bg-red-50/50'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            📧 Contact Support
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden">
+          {activeTab === 'chat' ? (
+            <div className="h-full">
+              <ChatBot isOpen={true} embedded={true} />
+            </div>
+          ) : submitted ? (
           /* Success State */
           <div className="p-8 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -297,7 +329,8 @@ export function HelpModal({ isOpen, onClose, onOpenVideo }: HelpModalProps) {
               </button>
             </div>
           </form>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

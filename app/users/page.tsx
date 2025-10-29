@@ -1,125 +1,77 @@
 "use client";
 
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useOnboarding, type UserRole } from "@/lib/onboarding-context";
+import { useOnboarding } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
+type UploadStatus = 'none' | 'uploading' | 'in-review' | 'configured';
 
 export default function UsersPage() {
-  const { state, addUser, deleteUser } = useOnboarding();
+  const { state, updateUsers, updateModuleProgress } = useOnboarding();
   const router = useRouter();
-  const [isAdding, setIsAdding] = useState(false);
-  const [formData, setFormData] = useState({ 
-    firstName: '', 
-    lastName: '', 
-    email: '', 
-    role: 'job-manager' as UserRole 
-  });
-  const [uploadingCSV, setUploadingCSV] = useState(false);
+
+  // Track progress when user lands on this step
+  useEffect(() => {
+    updateModuleProgress('users', 1, 1); // Step 1 of 1 - 100%
+  }, [updateModuleProgress]);
+
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('none');
+  const [uploadedFileName, setUploadedFileName] = useState('');
+  const [showContactModal, setShowContactModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Generate initials from name
-  const getInitials = (name: string) => {
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
+  const handleTemplateDownload = () => {
+    // Create a sample CSV template
+    const csvContent = "Name,Email,Role\nJohn Doe,john@example.com,Job Manager\nJane Smith,jane@example.com,Loan Officer\nBob Johnson,bob@example.com,Bank Admin";
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'team-template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
-  // Generate avatar color based on name
-  const getAvatarColor = (name: string) => {
-    const colors = [
-      'bg-blue-500', 'bg-green-500', 'bg-purple-500', 
-      'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
-    ];
-    const index = name.charCodeAt(0) % colors.length;
-    return colors[index];
-  };
-
-  const handleAddUser = () => {
-    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim()) return;
-    
-    const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
-    addUser({
-      name: fullName,
-      email: formData.email.trim(),
-      role: formData.role,
-      active: true,
-    });
-    
-    setFormData({ firstName: '', lastName: '', email: '', role: 'job-manager' });
-    setIsAdding(false);
-  };
-
-  const handleDeleteUser = (userId: string) => {
-    if (confirm('Are you sure you want to remove this user?')) {
-      deleteUser(userId);
-    }
-  };
-
-  const handleCSVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploadingCSV(true);
+    setUploadedFileName(file.name);
+    setUploadStatus('uploading');
     
-    // Simulate CSV processing
+    // Mark as ready to proceed immediately
+    updateUsers({
+      workbookImported: true,
+      completed: true
+    });
+    
+    // Simulate upload
     setTimeout(() => {
-      // In a real implementation, this would parse the CSV
-      // For now, we'll just add a sample user
-      addUser({
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        role: 'loan-officer',
-        active: true,
-      });
-      addUser({
-        name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        role: 'job-manager',
-        active: true,
-      });
+      setUploadStatus('in-review');
       
-      setUploadingCSV(false);
-      alert('CSV uploaded successfully! 2 users added.');
-      
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }, 1500);
+      // After 3 seconds, mark as configured
+      setTimeout(() => {
+        setUploadStatus('configured');
+      }, 3000);
+    }, 800);
   };
 
   const handleContinue = () => {
-    router.push('/users/lending-groups');
+    router.push('/users/complete');
   };
 
-  const canProceed = state.users.users.length > 0;
-
-  const roleLabels: Record<UserRole, string> = {
-    'bank-admin': 'Bank Admin',
-    'job-manager': 'Job Manager',
-    'loan-officer': 'Loan Officer',
-  };
-
-  const roleDescriptions: Record<UserRole, string> = {
-    'bank-admin': 'Full system access and configuration',
-    'job-manager': 'Oversee orders, manage vendors, and review submissions',
-    'loan-officer': 'Submit orders and track request status',
-  };
+  const canProceed = uploadStatus !== 'none';
 
   const steps = [
-    { id: '1', label: 'Add Users', status: 'in_progress' as const },
-    { id: '2', label: 'Assign Roles', status: 'not_started' as const },
+    { id: '1', label: 'Team Setup', status: 'in_progress' as const },
   ];
 
   return (
     <MainLayout 
       currentStep={0} 
       steps={steps}
-      title="Team & Groups Setup"
-      showWalkthrough={false}
+      title="Users Setup"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -127,185 +79,153 @@ export default function UsersPage() {
           <div className="lg:col-span-2">
             <div className="mb-6">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                Add Your Team
+                Team & Role Configuration
               </h1>
               <p className="text-base text-muted-foreground">
-                Add users and assign roles. You can add users individually or bulk upload via CSV.
+                Download the template, fill in your team details, and upload it back. Our CX team will configure everything for you.
               </p>
             </div>
 
-            {/* CSV Upload Button */}
-            <div className="mb-6">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleCSVUpload}
-                className="hidden"
-                id="csv-upload"
-              />
-              <label
-                htmlFor="csv-upload"
-                className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all cursor-pointer ${
-                  uploadingCSV
-                    ? 'bg-muted text-muted-foreground border-border cursor-wait'
-                    : 'text-primary bg-primary/10 border-primary/30 hover:bg-primary/20'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                {uploadingCSV ? 'Uploading...' : 'Bulk Upload CSV'}
-              </label>
-              <p className="text-xs text-muted-foreground mt-2">
-                Upload a CSV with columns: First Name, Last Name, Email, Role
-              </p>
+            {/* Step 1: Download Template */}
+            <div className="bg-card border border-border rounded-xl p-6 mb-6">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-slate-700 font-bold text-lg">1</span>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-foreground mb-2">
+                    Download Team Template
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Download the spreadsheet template to fill in your team member details including names, emails, and roles.
+                  </p>
+                  <button
+                    onClick={handleTemplateDownload}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md hover:shadow-lg"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Download Template
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Users List */}
-            <div className="space-y-3 mb-6">
-              {state.users.users.map((user) => (
-                <div key={user.id} className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center gap-4">
-                    {/* Avatar */}
-                    <div className={`w-12 h-12 ${getAvatarColor(user.name)} rounded-full flex items-center justify-center flex-shrink-0`}>
-                      <span className="text-white font-semibold text-sm">
-                        {getInitials(user.name)}
-                      </span>
+            {/* Step 2: Contact CX Team (Optional) */}
+            <div className="bg-card border border-border rounded-xl p-6 mb-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-slate-700 font-bold text-lg">2</span>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-foreground mb-2">
+                    Need Help? Contact CX Team <span className="text-sm text-muted-foreground font-normal">(Optional)</span>
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Schedule a meeting with our Customer Experience team to discuss your team structure and get guidance on filling out the template.
+                  </p>
+                  <button
+                    onClick={() => setShowContactModal(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 rounded-lg transition-colors border-2 border-slate-300 hover:border-slate-400"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Schedule Meeting with CX Team
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3: Upload Completed Template */}
+            <div className="bg-card border border-border rounded-xl p-6 mb-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-slate-700 font-bold text-lg">3</span>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-foreground mb-2">
+                    Upload Completed Template
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Once you've filled in the template, upload it here. Our team will review and configure your users.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    {/* Upload Button - Always Visible */}
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv,.xlsx,.xls"
+                        onChange={handleTemplateUpload}
+                        className="hidden"
+                        id="template-upload"
+                      />
+                      <label
+                        htmlFor="template-upload"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] cursor-pointer transition-all shadow-md hover:shadow-lg"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        {uploadStatus === 'none' ? 'Upload Template' : 'Re-upload Template'}
+                      </label>
                     </div>
 
-                    {/* User Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-foreground mb-1">{user.name}</div>
-                      <div className="text-sm text-muted-foreground mb-2">{user.email}</div>
-                      <div className="inline-flex items-center gap-2 px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded">
-                        {roleLabels[user.role]}
+                    {/* Status Display */}
+                    {uploadStatus === 'uploading' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-blue-900">Uploading template...</p>
+                            <p className="text-xs text-blue-700">{uploadedFileName}</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Delete Button */}
-                    <button
-                      onClick={() => handleDeleteUser(user.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors p-2"
-                      aria-label={`Remove ${user.name}`}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                    {uploadStatus === 'in-review' && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="animate-pulse w-5 h-5 bg-amber-500 rounded-full"></div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-amber-900">In Review / Progress</p>
+                            <p className="text-xs text-amber-700">Our CX team is reviewing and configuring your team setup...</p>
+                            <p className="text-xs text-amber-600 mt-1">File: {uploadedFileName}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-              {state.users.users.length === 0 && !isAdding && (
-                <div className="text-center py-8 bg-muted/30 rounded-lg border-2 border-dashed border-border">
-                  <svg className="w-10 h-10 text-muted-foreground mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <p className="text-sm text-muted-foreground">No users added yet</p>
-                </div>
-              )}
-            </div>
-
-            {/* Add User Form */}
-            {isAdding ? (
-              <div className="bg-card border-2 border-primary rounded-lg p-6 mb-6">
-                <h3 className="text-base font-semibold text-foreground mb-4">User #{state.users.users.length + 1}</h3>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        First Name <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                        placeholder="First name"
-                        className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        Last Name <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        placeholder="Last name"
-                        className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      Email <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="user@example.com"
-                      className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="user-role" className="block text-sm font-medium text-foreground mb-1">
-                      Role <span className="text-destructive">*</span>
-                    </label>
-                    <select
-                      id="user-role"
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                      className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="bank-admin">Bank Admin</option>
-                      <option value="job-manager">Job Manager</option>
-                      <option value="loan-officer">Loan Officer</option>
-                    </select>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleAddUser}
-                      disabled={!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim()}
-                      className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                    >
-                      Add User
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsAdding(false);
-                        setFormData({ firstName: '', lastName: '', email: '', role: 'job-manager' });
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-secondary-foreground bg-card border border-input rounded-lg hover:bg-accent"
-                    >
-                      Cancel
-                    </button>
+                    {uploadStatus === 'configured' && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center gap-3">
+                          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-green-900">✓ Configured Successfully!</p>
+                            <p className="text-xs text-green-700">Your team has been set up and roles have been assigned.</p>
+                            <p className="text-xs text-green-600 mt-1">File: {uploadedFileName}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-            ) : (
-              <button
-                onClick={() => setIsAdding(true)}
-                className="w-full px-4 py-3 text-sm font-medium text-primary bg-primary/10 border-2 border-dashed border-primary rounded-lg hover:bg-primary/20 transition-colors"
-              >
-                + Add Another User
-              </button>
-            )}
+            </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between mt-8">
+            {/* Navigation */}
+            <div className="flex items-center justify-between pt-4">
               <button 
-                onClick={() => router.push('/hub')}
+                onClick={() => router.push('/users-intro')}
                 className="px-4 py-2 text-sm font-medium text-secondary-foreground bg-card border border-input rounded-lg hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
               >
-                ← Back to Hub
+                ← Back
               </button>
               <button 
                 onClick={handleContinue}
@@ -316,90 +236,111 @@ export default function UsersPage() {
                     : 'text-muted-foreground bg-muted cursor-not-allowed'
                 }`}
               >
-                {canProceed ? 'Next →' : 'Add at least one user'}
+                Complete Module →
               </button>
             </div>
           </div>
 
-          {/* Right Rail: Role Guide & Educational Panel */}
+          {/* Educational Panel */}
           <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-6 sticky top-24">
-              <div className="flex items-center gap-2 mb-4">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <h3 className="font-semibold text-foreground">User Roles Guide</h3>
-              </div>
-              
-              <p className="text-sm text-muted-foreground mb-6">
-                Assign the right role to each user based on their responsibilities in your workflow.
-              </p>
-
-              {/* Role Descriptions */}
-              <div className="space-y-4 mb-6 pb-6 border-b border-border">
-                <div>
-                  <div className="font-medium text-foreground text-sm mb-1 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                    </svg>
-                    Bank Admin
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {roleDescriptions['bank-admin']}. Can configure system settings and manage all aspects.
-                  </p>
+            <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-5 sticky top-20">
+              <h3 className="font-semibold text-foreground text-sm mb-3">How This Works</h3>
+              <div className="space-y-3 text-xs text-muted-foreground">
+                <div className="flex items-start gap-2">
+                  <span className="text-primary font-bold">1.</span>
+                  <p>Download the template spreadsheet</p>
                 </div>
-
-                <div>
-                  <div className="font-medium text-foreground text-sm mb-1 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
-                    Job Manager
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {roleDescriptions['job-manager']}. Primary day-to-day operators.
-                  </p>
+                <div className="flex items-start gap-2">
+                  <span className="text-primary font-bold">2.</span>
+                  <p>Fill in your team member details (Name, Email, Role)</p>
                 </div>
-
-                <div>
-                  <div className="font-medium text-foreground text-sm mb-1 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Loan Officer
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {roleDescriptions['loan-officer']}. Limited to their own orders.
-                  </p>
+                <div className="flex items-start gap-2">
+                  <span className="text-primary font-bold">3.</span>
+                  <p>Optionally, schedule a call with our CX team for guidance</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-primary font-bold">4.</span>
+                  <p>Upload the completed template</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-primary font-bold">5.</span>
+                  <p>Our team will configure all users and roles for you</p>
                 </div>
               </div>
 
-              {/* Tips */}
-              <div>
-                <h4 className="font-medium text-foreground text-sm mb-3">Tips</h4>
-                <ul className="space-y-2 text-xs text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-0.5">•</span>
-                    <span>Start with 1-2 admins and your job managers</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-0.5">•</span>
-                    <span>Add loan officers later as needed</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-0.5">•</span>
-                    <span>You can edit roles anytime from settings</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-0.5">•</span>
-                    <span>CSV upload supports bulk adding teams</span>
-                  </li>
+              <div className="mt-4 pt-4 border-t border-primary/20">
+                <h4 className="font-semibold text-foreground text-xs mb-2">Available Roles:</h4>
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  <li>• Bank Admin - Full access</li>
+                  <li>• Job Manager - Order management</li>
+                  <li>• Loan Officer - Submit requests</li>
                 </ul>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Contact CX Team Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-border p-5 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-foreground">Schedule Meeting with CX Team</h2>
+              <button 
+                onClick={() => setShowContactModal(false)} 
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Close modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="text-sm text-muted-foreground mb-6">
+                Our Customer Experience team is here to help! Schedule a call to discuss your team structure, role assignments, and any questions about the setup process.
+              </p>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-blue-900 mb-1">What to expect:</p>
+                    <ul className="text-xs text-blue-700 space-y-1">
+                      <li>• Review your organizational structure</li>
+                      <li>• Discuss role assignments and permissions</li>
+                      <li>• Get help completing the team template</li>
+                      <li>• Duration: 15-30 minutes</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    alert('Meeting request sent! Our CX team will contact you within 24 hours to schedule a time.');
+                    setShowContactModal(false);
+                  }}
+                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md"
+                >
+                  Request Meeting
+                </button>
+                <button
+                  onClick={() => setShowContactModal(false)}
+                  className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground border border-input rounded-lg hover:bg-accent transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }

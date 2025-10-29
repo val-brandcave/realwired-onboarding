@@ -4,7 +4,9 @@ A modern, modular onboarding experience for YouConnect built with Next.js 15, Re
 
 ## Overview
 
-This application provides a streamlined 6-module onboarding flow that guides users through setting up your YouConnect account. Each module is independent, features celebration animations, and returns to a central hub for flexible navigation. After all modules are complete, the hub offers CTAs to schedule a meeting and create a Test Order.
+This application provides a streamlined 7-module onboarding flow that guides users through setting up a YouConnect account. Each module is independent, features celebration animations, and returns to a central hub for flexible navigation. After all modules are complete, the hub offers CTAs to schedule a meeting and create a Test Order.
+
+In addition, a CX Agent Portal enables RealWired agents to manage multiple bank tenants' onboarding progress.
 
 ## Quick Start
 
@@ -35,43 +37,55 @@ npm start
 
 ## Application Structure
 
-### The 6 Modules
+### The 7 Modules
 
-1. **Organization Setup** (~10 min)
-   - Configure services offered
-   - Select request processes
-   - Define operating regions and locations
+1. **Organization Setup** (~8 min)
+   - Organization Info (name, custom URL, industry focus)
+   - Branding (logos, primary/secondary colors; live preview; skip supported)
+   - Onboarding Participants (primary decision maker; additional participants; bulk upload with generated avatars)
+   - IT & Security Configuration (SSO vs standard auth, password policy, IP allowlisting, session timeout controls)
 
 2. **Definitions** (~18 min)
-   - Define property categories
-   - Configure request types
-   - Customize property and request form fields
+   - Define property categories and request types with inline education
+   - Configure property record and request form fields with preview checkpoints
+   - Review document types, reject reasons, and mapping defaults before completing
 
-3. **Team & Groups** (~12 min)
-   - Add team members with roles
-   - Create lending groups
-   - Import users via workbook
+3. **Team & Groups** (~5 min)
+   - Download/import the team workbook (Bank Admin, Job Manager, Loan Officer roles)
+   - Optional CX scheduling modal for collaborative setup
+   - Upload tracking with staged statuses (Uploading -> In review -> Configured)
+   - Configure lending groups with multi-select regions/products and inline CRUD
 
-4. **Routing** (~12 min)
-   - Configure smart routing rules
-   - Set up priority-based assignment
-   - Define logical routing conditions
+4. **Vendors** (~5 min)
+   - Download the vendor workbook (contacts, licenses, coverage)
+   - Optional CX scheduling modal mirroring the Users flow
+   - Upload tracking with staged statuses and success confirmation
+   - Educational sidebar outlining template expectations and next steps
 
-5. **General Settings** (~8 min)
-   - Configure workflow timers
-   - Set notification preferences
-   - Review bid engagement settings
+5. **Routing** (~12 min)
+   - Configure smart routing rules (Request Type, Logical, Assigned Area priorities)
+   - Manage enable toggles, priority badges, and summary cards per route
+   - Launch the routing visualizer modal to reinforce precedence and fallbacks
 
-6. **IT Readiness Checklist** (~2 min)
-   - Confirm email domains are allowlisted
-   - Verify platform URL access from your network
-   - Ensure users can receive notifications and access the app
+6. **General Settings** (~8 min)
+   - Configure workflow timers with debounced sliders and defaults
+   - Toggle notification policies and review approval requirements
+   - Review bid engagement templates with individual download actions
+
+7. **IT Readiness Checklist** (~2 min)
+   - Confirm email domains are allowlisted and URLs are reachable
+   - Info banner explains downstream impact
+   - Celebration screen and CTA back to the hub upon completion
 
 ### Key Features
 
 - ✨ **Modular Design**: Complete modules in any order (after Module 1)
 - 🎉 **Celebration Moments**: Confetti animations after each completion
 - 🎯 **Hub Navigation**: Central dashboard showing progress across all modules
+  - "Your Next Step" hero with assignee dropdown
+  - Per-module participant assignment dropdown (locked modules default to primary)
+  - Completed modules show read-only assignee badge (Module 1)
+  - Mini progress bars (200px; completed modules show green 100%)
  - 🧪 **Post-completion Test Order**: Create a sample order from the hub to validate routing
 - 💾 **State Persistence**: React Context preserves all configuration choices
 - 📱 **Responsive**: Works seamlessly on desktop, tablet, and mobile
@@ -95,18 +109,24 @@ youconnect-discovery/
 ├── app/                              # Next.js 15 App Router pages
 │   ├── page.tsx                      # Home (auto-redirects to Module 1)
 │   ├── hub/                          # Central navigation hub
+│   ├── cx-portal/                    # CX Agent Portal (list, edit, tenant onboarding)
+│   │   ├── page.tsx                  # Tenant list
+│   │   ├── edit-tenant/page.tsx      # Deep configuration + tickets
+│   │   └── tenant-onboarding/page.tsx# Agent-side module tabs (waiting for client)
 │   ├── organization-setup/           # Module 1
 │   ├── organization-setup-intro/     # Module 1 entry
 │   ├── definitions/                  # Module 2
 │   ├── definitions-intro/            # Module 2 entry
 │   ├── users/                        # Module 3
 │   ├── users-intro/                  # Module 3 entry
-│   ├── routing-setup/                # Module 4
-│   ├── routing-intro/                # Module 4 entry
-│   ├── general-settings/             # Module 5
-│   ├── general-settings-intro/       # Module 5 entry
-│   ├── it-checklist/                 # Module 6
-│   ├── it-checklist-intro/           # Module 6 entry
+│   ├── vendors/                      # Module 4
+│   ├── vendors-intro/                # Module 4 entry
+│   ├── routing-setup/                # Module 5
+│   ├── routing-intro/                # Module 5 entry
+│   ├── general-settings/             # Module 6
+│   ├── general-settings-intro/       # Module 6 entry
+│   ├── it-checklist/                 # Module 7
+│   ├── it-checklist-intro/           # Module 7 entry
 │   ├── test-order/                   # Post-completion Test Order page
 │   ├── layout.tsx                    # Root layout
 │   └── globals.css                   # Global styles
@@ -164,7 +184,7 @@ All state is preserved throughout the onboarding journey and can be accessed fro
 
 ### Accessibility
 
-- Always include ARIA labels
+- Always include ARIA labels (all icon-only buttons have `aria-label`)
 - Maintain keyboard navigation
 - Use semantic HTML elements
 - Provide alternative text for images
@@ -177,9 +197,22 @@ All state is preserved throughout the onboarding journey and can be accessed fro
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
 
+### Screenshots (Caution)
+
+There is a helper script at `scripts/take-screenshots.js` used to generate UI screenshots locally.
+
+- This script is NEVER run automatically.
+- We will not take screenshots unless you explicitly ask us to.
+- To run manually (if desired):
+
+```bash
+node scripts/take-screenshots.js
+```
+
 ## Documentation
 
 - **ROUTES-SUMMARY.md**: Complete route documentation and navigation flows
+- **CX Agent Portal**: See `ROUTES-SUMMARY.md` (CX Agent Portal section) for routes and features
 - **context/features/**: Feature-specific PRDs
 - **documents/**: Onboarding materials and reference docs
 
@@ -191,7 +224,7 @@ To test the full flow:
 1. Start at http://localhost:3000
 2. Complete Module 1 (Organization Setup)
 3. See the Hub for the first time
-4. Complete remaining modules (Definitions, Team & Groups, Routing, General Settings, IT Checklist)
+4. Complete remaining modules (Definitions, Team & Groups, Vendors, Routing, General Settings, IT Checklist)
 5. View hub "All Complete" celebration
 6. From the hub, choose "Create Test Order" to simulate routing
 

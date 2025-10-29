@@ -6,25 +6,107 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import type { RequestFormField } from "@/lib/onboarding-context";
 
-export default function RequestFormConfigurePage() {
-  const { state, updateDefinitions } = useOnboarding();
-  const router = useRouter();
-  const [fields, setFields] = useState<RequestFormField[]>(state.definitions.requestFormFields);
-  const [selectedDocTypes, setSelectedDocTypes] = useState<string[]>(state.definitions.documentTypes);
-  const [selectedRejectReasons, setSelectedRejectReasons] = useState<string[]>(state.definitions.rejectReasons);
+type FieldInputType = 'text' | 'textarea' | 'number' | 'email' | 'tel' | 'date' | 'select' | 'multiselect';
 
-  const selectedRequestId = state.definitions.selectedSampleRequestId;
+interface ExtendedRequestField extends RequestFormField {
+  inputType?: FieldInputType;
+  dropdownOptions?: string[];
+}
 
-  // If no request is selected, redirect back to selection page
-  useEffect(() => {
-    if (!selectedRequestId) {
-      router.push('/definitions/request-form');
-    }
-  }, [selectedRequestId, router]);
-
-  if (!selectedRequestId) {
-    return null;
+// Get available input types based on field context
+function getAvailableInputTypes(fieldId: string): { value: FieldInputType; label: string }[] {
+  // Email fields
+  if (fieldId === 'borrower-email') {
+    return [
+      { value: 'email', label: 'Email Input' },
+      { value: 'text', label: 'Text Input' }
+    ];
   }
+  
+  // Phone fields
+  if (fieldId === 'borrower-phone') {
+    return [
+      { value: 'tel', label: 'Phone Input' },
+      { value: 'text', label: 'Text Input' }
+    ];
+  }
+  
+  // Date fields
+  if (fieldId === 'order-date' || fieldId === 'due-date') {
+    return [
+      { value: 'date', label: 'Date Picker' }
+    ];
+  }
+  
+  // Numeric fields
+  if (fieldId === 'loan-amount' || fieldId === 'ltv-ratio' || fieldId === 'sales-price') {
+    return [
+      { value: 'number', label: 'Numeric Value' },
+      { value: 'text', label: 'Text Input' }
+    ];
+  }
+  
+  // Request Type field (predefined dropdown from previous page)
+  if (fieldId === 'request-type') {
+    return [
+      { value: 'select', label: 'Dropdown (predefined)' }
+    ];
+  }
+  
+  // All other fields
+  return [
+    { value: 'text', label: 'Text Input' },
+    { value: 'textarea', label: 'Multi-line Text Field' },
+    { value: 'select', label: 'Dropdown Selection' },
+    { value: 'multiselect', label: 'Multi-select Dropdown' }
+  ];
+}
+
+// Get default dropdown options for fields
+function getDefaultDropdownOptions(fieldId: string): string[] {
+  const defaults: Record<string, string[]> = {
+    'request-purpose': ['Additional Collateral', 'Additional Funding', 'Classified Asset', 'Construction Inspection', 'Construction (to perm secondary mkt.)', 'Construction (w/perm in-house)', 'External Property Inspection', 'Foreclosure', 'Final Inspection', 'new loan (secondary market)', 'new loan', 'OREO Asset', 'Loan Renewal (new funds)', 'Loan Renewal (no new funds)'],
+    'loan-type': ['Business', 'Real Estate', 'Residence'],
+    'ordering-choices': ['Engage at Discretion', 'Obtain Bids - Engage Lowest', 'Obtain Bids - Notify Account Officer', 'ObtainBids-PrePymt Req-NotifyBorrower'],
+    'payment-method': ['Rolled into Loan', 'Customer Will Pay', 'Bank Will Pay'],
+    'intended-use': ['Conventional Loan Underwriting', 'SBA Loan Underwriting', 'Potential Foreclosure'],
+    'contact-type': ['Borrower', 'Property Manager', 'Seller', 'Tenant'],
+    'marketing-status': ['For Sale', 'Under Contract', 'Not on the Market', 'Recently Sold'],
+    'rush-order': ['Yes', 'No'],
+    'appraisal-type': ['1004 Full Appraisal', '1025 Small Residential Income', '1073 Condo Appraisal', '2055 Exterior Only', 'Commercial Narrative Report', 'Phase I Environmental Site Assessment', 'Desk Review', 'Other'],
+    'turn-time': ['3 Business Days', '5 Business Days', '7 Business Days', '10 Business Days', '14 Business Days', '21 Business Days'],
+  };
+  
+  return defaults[fieldId] || [];
+}
+
+export default function RequestFormConfigurePage() {
+  const { state, updateDefinitions, updateModuleProgress } = useOnboarding();
+  const router = useRouter();
+  
+  // Track progress when user lands on this step
+  useEffect(() => {
+    updateModuleProgress('definitions', 4, 4); // Step 4 of 4 - 100%
+  }, [updateModuleProgress]);
+
+  // Initialize fields with input types
+  const [fields, setFields] = useState<ExtendedRequestField[]>(
+    state.definitions.requestFormFields.map(field => ({
+      ...field,
+      inputType: (field.type as FieldInputType) || 'text',
+      dropdownOptions: field.options || getDefaultDropdownOptions(field.id)
+    }))
+  );
+
+  const [editingDropdownField, setEditingDropdownField] = useState<string | null>(null);
+  const [newDropdownItem, setNewDropdownItem] = useState('');
+  
+  // Custom field creation
+  const [showCustomFieldForm, setShowCustomFieldForm] = useState(false);
+  const [customFieldLabel, setCustomFieldLabel] = useState('');
+  const [customFieldType, setCustomFieldType] = useState<FieldInputType>('text');
+  const [customFieldOptions, setCustomFieldOptions] = useState<string[]>([]);
+  const [newCustomOption, setNewCustomOption] = useState('');
 
   const toggleField = (fieldId: string) => {
     setFields(prevFields =>
@@ -44,28 +126,96 @@ export default function RequestFormConfigurePage() {
     );
   };
 
-  const handleToggleDocType = (type: string) => {
-    setSelectedDocTypes(prev => 
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+  const updateFieldInputType = (fieldId: string, inputType: FieldInputType) => {
+    setFields(prevFields =>
+      prevFields.map(field =>
+        field.id === fieldId 
+          ? { 
+              ...field, 
+              inputType,
+              dropdownOptions: (inputType === 'select' || inputType === 'multiselect') 
+                ? (field.dropdownOptions || getDefaultDropdownOptions(fieldId))
+                : undefined
+            }
+          : field
+      )
     );
   };
 
-  const handleToggleRejectReason = (reason: string) => {
-    setSelectedRejectReasons(prev => 
-      prev.includes(reason) ? prev.filter(r => r !== reason) : [...prev, reason]
+  const addDropdownItem = (fieldId: string) => {
+    if (!newDropdownItem.trim()) return;
+    
+    setFields(prevFields =>
+      prevFields.map(field =>
+        field.id === fieldId 
+          ? { ...field, dropdownOptions: [...(field.dropdownOptions || []), newDropdownItem.trim()] }
+          : field
+      )
     );
+    setNewDropdownItem('');
+  };
+
+  const removeDropdownItem = (fieldId: string, item: string) => {
+    setFields(prevFields =>
+      prevFields.map(field =>
+        field.id === fieldId 
+          ? { ...field, dropdownOptions: field.dropdownOptions?.filter(i => i !== item) }
+          : field
+      )
+    );
+  };
+
+  const handleAddCustomField = () => {
+    if (!customFieldLabel.trim()) return;
+
+    const newField: ExtendedRequestField = {
+      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      label: customFieldLabel.trim(),
+      customLabel: customFieldLabel.trim(),
+      category: 'details',
+      type: customFieldType === 'multiselect' ? 'select' : customFieldType,
+      enabled: true,
+      required: false, // Custom fields are always optional
+      readonly: false,
+      inputType: customFieldType,
+      dropdownOptions: (customFieldType === 'select' || customFieldType === 'multiselect') 
+        ? customFieldOptions 
+        : undefined,
+    };
+
+    setFields([...fields, newField]);
+    
+    // Reset form
+    setCustomFieldLabel('');
+    setCustomFieldType('text');
+    setCustomFieldOptions([]);
+    setNewCustomOption('');
+    setShowCustomFieldForm(false);
+  };
+
+  const handleAddCustomOption = () => {
+    if (newCustomOption.trim() && !customFieldOptions.includes(newCustomOption.trim())) {
+      setCustomFieldOptions([...customFieldOptions, newCustomOption.trim()]);
+      setNewCustomOption('');
+    }
+  };
+
+  const handleRemoveCustomOption = (option: string) => {
+    setCustomFieldOptions(customFieldOptions.filter(o => o !== option));
+  };
+
+  const handleRemoveCustomField = (fieldId: string) => {
+    if (fieldId.startsWith('custom-')) {
+      setFields(fields.filter(f => f.id !== fieldId));
+    }
   };
 
   const handleContinue = () => {
-    // Save the field configuration
     updateDefinitions({ 
       requestFormFields: fields,
-      documentTypes: selectedDocTypes,
-      rejectReasons: selectedRejectReasons,
+      completed: true
     });
-    
-    // Navigate to preview page
-    router.push('/definitions/request-form/preview');
+    router.push('/definitions/complete');
   };
 
   const overviewFields = fields.filter(f => f.category === 'overview');
@@ -73,359 +223,486 @@ export default function RequestFormConfigurePage() {
   const enabledCount = fields.filter(f => f.enabled && !f.readonly).length;
 
   const steps = [
-    { id: '1', label: 'Properties', status: 'completed' as const },
-    { id: '2', label: 'Request Form', status: 'in_progress' as const },
-  ];
-
-  // All available document types and reject reasons
-  const allDocTypes = [
-    'Appraisal Report', 'Inspection Report', 'Environmental Assessment', 
-    'Title Document', 'Review Letter', 'Supporting Documents'
-  ];
-  
-  const allRejectReasons = [
-    'Incomplete Information', 'Scope of Work Issue', 'Valuation Discrepancy', 
-    'Compliance Issue', 'Other'
+    { id: '1', label: 'Property Categories', status: 'completed' as const },
+    { id: '2', label: 'Property Fields', status: 'completed' as const },
+    { id: '3', label: 'Request Types', status: 'completed' as const },
+    { id: '4', label: 'Request Form', status: 'in_progress' as const },
   ];
 
   return (
     <MainLayout 
-      currentStep={1} 
+      currentStep={3} 
       steps={steps}
       title="Definitions"
-      showWalkthrough={false}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-3">
-            Configure Request Form Field Labels
+        <div className="text-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+            Configure Request Form Fields
           </h1>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Select which fields you want in your request forms and customize their labels.
+          <p className="text-base text-muted-foreground">
+            Customize the fields that appear in all request forms
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Main Content (2/3 width) */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2">
             {/* Selection Summary */}
-            <div className="bg-card border border-border rounded-lg p-4">
+            <div className="bg-card border border-border rounded-lg p-4 mb-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span className="text-sm font-semibold text-foreground">
-                    {enabledCount} detail fields selected • {selectedDocTypes.length} document types • {selectedRejectReasons.length} reject reasons
+                    {enabledCount} of {detailsFields.length} detail fields selected
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  Check boxes to include • Edit labels by clicking them
+                  * = Required field
                 </span>
               </div>
             </div>
 
-            {/* Overview Section (Always Included) */}
-            <div className="bg-card border-2 border-primary/20 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-xl font-bold text-foreground">Overview</h2>
-                  <p className="text-sm text-muted-foreground">Context fields (always included)</p>
-                </div>
-                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">
-                  Required
-                </span>
+            {/* Overview Section */}
+            <div className="bg-card border border-border rounded-xl p-6 mb-6">
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Overview Fields
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Basic request context (read-only reference fields)
+              </p>
+              
+              <div className="space-y-3">
+                {overviewFields.map((field) => (
+                  <RequestFieldConfiguration
+                    key={field.id}
+                    field={field}
+                    onToggle={toggleField}
+                    onLabelUpdate={updateFieldLabel}
+                    onInputTypeUpdate={updateFieldInputType}
+                    onAddDropdownItem={addDropdownItem}
+                    onRemoveDropdownItem={removeDropdownItem}
+                    editingDropdownField={editingDropdownField}
+                    setEditingDropdownField={setEditingDropdownField}
+                    newDropdownItem={newDropdownItem}
+                    setNewDropdownItem={setNewDropdownItem}
+                    isPredefinedDropdown={field.id === 'request-type'}
+                  />
+                ))}
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {overviewFields.map((field) => {
-                  const displayLabel = field.customLabel || field.label;
+            {/* Details Section */}
+            <div className="bg-card border border-border rounded-xl p-6 mb-6">
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Request Details
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Customizable fields for request information
+              </p>
+              
+              <div className="space-y-3">
+                {detailsFields.map((field) => (
+                  <RequestFieldConfiguration
+                    key={field.id}
+                    field={field}
+                    onToggle={toggleField}
+                    onLabelUpdate={updateFieldLabel}
+                    onInputTypeUpdate={updateFieldInputType}
+                    onAddDropdownItem={addDropdownItem}
+                    onRemoveDropdownItem={removeDropdownItem}
+                    editingDropdownField={editingDropdownField}
+                    setEditingDropdownField={setEditingDropdownField}
+                    newDropdownItem={newDropdownItem}
+                    setNewDropdownItem={setNewDropdownItem}
+                    isPredefinedDropdown={false}
+                    isCustomField={field.id.startsWith('custom-')}
+                    onRemoveCustomField={handleRemoveCustomField}
+                  />
+                ))}
 
-                  return (
-                    <div 
-                      key={field.id} 
-                      className="border rounded-lg p-4 bg-primary/5 border-primary/30"
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Checkbox (disabled for overview) */}
-                        <div className="pt-1">
-                          <input
-                            type="checkbox"
-                            checked={true}
-                            disabled
-                            className="w-5 h-5 rounded border-gray-300 text-primary cursor-not-allowed opacity-50"
-                            aria-label={`${field.label} field (always included)`}
-                          />
-                        </div>
-                        
-                        {/* Editable Label */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <input
-                              type="text"
-                              value={displayLabel}
-                              onChange={(e) => updateFieldLabel(field.id, e.target.value)}
-                              className="flex-1 px-2 py-1 text-sm font-semibold text-foreground bg-white border border-input hover:border-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary rounded transition-colors"
-                              placeholder="Field label"
-                              aria-label={`Edit label for ${field.label}`}
-                              title={`Edit label for ${field.label}`}
-                            />
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {field.type === 'select' ? 'Dropdown selection' : 'Text input'}
-                          </p>
-                        </div>
-                      </div>
+                {/* Add Custom Field Button/Form */}
+                {!showCustomFieldForm ? (
+                  <button
+                    onClick={() => setShowCustomFieldForm(true)}
+                    className="w-full px-4 py-3 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors flex items-center justify-center gap-2 border-2 border-dashed border-primary/30"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Custom Field
+                  </button>
+                ) : (
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground">Create Custom Field</h3>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-foreground mb-1">
+                        Field Label <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={customFieldLabel}
+                        onChange={(e) => setCustomFieldLabel(e.target.value)}
+                        placeholder="e.g., Branch Number, Loan Purpose"
+                        className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
                     </div>
-                  );
-                })}
-              </div>
-            </div>
 
-            {/* Request Details Section */}
-            <div className="bg-card border-2 border-primary/20 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Request Details</h2>
-                  <p className="text-sm text-muted-foreground">Configurable fields for your request forms</p>
-                </div>
-              </div>
+                    <div>
+                      <label htmlFor="custom-field-type-request" className="block text-xs font-medium text-foreground mb-1">
+                        Input Type <span className="text-destructive">*</span>
+                      </label>
+                      <select
+                        id="custom-field-type-request"
+                        value={customFieldType}
+                        onChange={(e) => setCustomFieldType(e.target.value as FieldInputType)}
+                        className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                      >
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="email">Email</option>
+                        <option value="tel">Phone</option>
+                        <option value="date">Date</option>
+                        <option value="textarea">Text Area</option>
+                        <option value="select">Dropdown (Select)</option>
+                      </select>
+                    </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {detailsFields.map((field) => {
-                  const displayLabel = field.customLabel || field.label;
-
-                  return (
-                    <div 
-                      key={field.id} 
-                      className={`border rounded-lg p-4 transition-all ${
-                        field.enabled 
-                          ? 'bg-primary/5 border-primary/30 shadow-sm' 
-                          : 'bg-muted/30 border-border'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Checkbox */}
-                        <div className="pt-1">
-                          <input
-                            type="checkbox"
-                            id={`field-${field.id}`}
-                            checked={field.enabled}
-                            onChange={() => toggleField(field.id)}
-                            disabled={field.required}
-                            className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label={`Include ${field.label} field`}
-                          />
-                        </div>
-                        
-                        {/* Editable Label */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <input
-                              type="text"
-                              value={displayLabel}
-                              onChange={(e) => updateFieldLabel(field.id, e.target.value)}
-                              className="flex-1 px-2 py-1 text-sm font-semibold text-foreground bg-white border border-input hover:border-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary rounded transition-colors"
-                              placeholder="Field label"
-                              aria-label={`Edit label for ${field.label}`}
-                              title={`Edit label for ${field.label}`}
-                            />
-                            {field.required && (
-                              <span className="text-destructive text-xs font-semibold px-2 py-0.5 bg-red-50 rounded">
-                                Required
+                    {(customFieldType === 'select' || customFieldType === 'multiselect') && (
+                      <div>
+                        <label className="block text-xs font-medium text-foreground mb-1">
+                          Dropdown Options
+                        </label>
+                        <div className="space-y-2">
+                          {customFieldOptions.map((option, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <span className="flex-1 px-2 py-1 bg-white border border-input rounded text-xs">
+                                {option}
                               </span>
-                            )}
+                              <button
+                                onClick={() => handleRemoveCustomOption(option)}
+                                className="text-destructive hover:text-destructive/80"
+                                aria-label={`Remove ${option}`}
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newCustomOption}
+                              onChange={(e) => setNewCustomOption(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomOption())}
+                              placeholder="Add option"
+                              className="flex-1 px-3 py-1.5 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                            />
+                            <button
+                              onClick={handleAddCustomOption}
+                              className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                            >
+                              Add
+                            </button>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            {field.type === 'textarea' ? 'Multi-line text field' : 
-                             field.type === 'select' ? 'Dropdown selection' :
-                             field.type === 'email' ? 'Email address' :
-                             field.type === 'tel' ? 'Phone number' :
-                             field.type === 'date' ? 'Date picker' :
-                             field.type === 'number' ? 'Numeric value' : 
-                             'Text input'}
-                          </p>
                         </div>
                       </div>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-2">
+                      <button
+                        onClick={handleAddCustomField}
+                        disabled={!customFieldLabel.trim() || ((customFieldType === 'select' || customFieldType === 'multiselect') && customFieldOptions.length === 0)}
+                        className="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Create Field
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCustomFieldForm(false);
+                          setCustomFieldLabel('');
+                          setCustomFieldType('text');
+                          setCustomFieldOptions([]);
+                          setNewCustomOption('');
+                        }}
+                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                      >
+                        Cancel
+                      </button>
                     </div>
-                  );
-                })}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Document Types Section */}
-            <div className="bg-card border-2 border-primary/20 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Document Types</h2>
-                  <p className="text-sm text-muted-foreground">Select required document types for this request</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {allDocTypes.map((type) => (
-                  <label key={type} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/30 cursor-pointer border border-transparent hover:border-border transition-all">
-                    <input
-                      type="checkbox"
-                      checked={selectedDocTypes.includes(type)}
-                      onChange={() => handleToggleDocType(type)}
-                      className="w-4 h-4 text-primary border-input rounded focus:ring-2 focus:ring-primary cursor-pointer"
-                      aria-label={`Include ${type}`}
-                    />
-                    <span className="text-sm text-foreground">{type}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Reject Reasons Section */}
-            <div className="bg-card border-2 border-primary/20 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Reject Reasons</h2>
-                  <p className="text-sm text-muted-foreground">Select predefined reasons for declining requests</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {allRejectReasons.map((reason) => (
-                  <label key={reason} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/30 cursor-pointer border border-transparent hover:border-border transition-all">
-                    <input
-                      type="checkbox"
-                      checked={selectedRejectReasons.includes(reason)}
-                      onChange={() => handleToggleRejectReason(reason)}
-                      className="w-4 h-4 text-primary border-input rounded focus:ring-2 focus:ring-primary cursor-pointer"
-                      aria-label={`Include ${reason}`}
-                    />
-                    <span className="text-sm text-foreground">{reason}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
+            {/* Navigation */}
             <div className="flex items-center justify-between pt-4">
               <button 
-                onClick={() => router.push('/definitions/request-form')}
+                onClick={() => router.push('/definitions/request-types-setup')}
                 className="px-4 py-2 text-sm font-medium text-secondary-foreground bg-card border border-input rounded-lg hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
               >
                 ← Back
               </button>
               <button 
                 onClick={handleContinue}
-                className="px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] focus:outline-none focus:ring-4 focus:ring-[#9F2E2B]/30 transition-all shadow-lg hover:shadow-xl"
+                className="px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all"
               >
-                Preview Configured Form →
+                Complete Definitions Module →
               </button>
             </div>
           </div>
 
           {/* Right Column: Educational Panel (1/3 width) */}
           <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 sticky top-24">
-              <div className="flex items-center gap-2 mb-4">
-                <svg className="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h3 className="font-semibold text-slate-900">How to Use This Page</h3>
-              </div>
-              
-              <p className="text-sm text-slate-700 mb-6">
-                Select which fields to include in your request forms and customize their label names to match your bank's terminology.
-              </p>
-
-              {/* Instructions */}
-              <div className="mb-6 pb-6 border-b border-blue-200">
-                <h4 className="font-medium text-slate-900 text-sm mb-3">Instructions</h4>
-                <ol className="space-y-2 text-xs text-slate-700 list-decimal list-inside">
-                  <li>Check boxes for detail fields you want to include</li>
-                  <li>Click on any label to edit and customize it</li>
-                  <li>Overview fields are always included</li>
-                  <li>Select relevant document types and reject reasons</li>
-                </ol>
+            <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-5 sticky top-20">
+              <div className="mb-4">
+                <h3 className="font-semibold text-foreground text-sm mb-2">Why We Need This</h3>
+                <p className="text-xs text-muted-foreground">
+                  Request form fields capture essential information when users submit new requests. Customize these fields to match your workflow and requirements.
+                </p>
               </div>
 
-              {/* Field Sections */}
-              <div className="mb-6 pb-6 border-b border-blue-200">
-                <h4 className="font-medium text-slate-900 text-sm mb-3">Form Sections</h4>
-                <div className="space-y-3 text-xs">
-                  <div className="bg-white/70 rounded-lg p-3 border border-blue-100">
-                    <div className="font-medium text-slate-900 mb-1">Overview</div>
-                    <p className="text-slate-600">Always included - Request Type and Property Address</p>
-                  </div>
-                  <div className="bg-white/70 rounded-lg p-3 border border-blue-100">
-                    <div className="font-medium text-slate-900 mb-1">Request Details</div>
-                    <p className="text-slate-600">Configurable fields - select what information you need</p>
+              <div className="space-y-4">
+                {/* Video Tutorial */}
+                <div>
+                  <h4 className="font-medium text-foreground text-xs mb-2 flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Video Tutorial (2:30)
+                  </h4>
+                  <div className="relative w-full aspect-video bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400 rounded-lg overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNmMWY1ZjkiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNlMmU4ZjAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0idXJsKCNnKSIvPjxjaXJjbGUgY3g9IjEyMCIgY3k9IjE2MCIgcj0iMzAiIGZpbGw9IiM5NGE3YjgiIG9wYWNpdHk9IjAuNiIvPjxjaXJjbGUgY3g9IjEyMCIgY3k9IjEzNSIgcj0iMjIiIGZpbGw9IiM2NDc0OGIiIG9wYWNpdHk9IjAuNyIvPjxjaXJjbGUgY3g9IjI4MCIgY3k9IjE3MCIgcj0iMzIiIGZpbGw9IiM5NGE3YjgiIG9wYWNpdHk9IjAuNiIvPjxjaXJjbGUgY3g9IjI4MCIgY3k9IjE0NSIgcj0iMjQiIGZpbGw9IiM2NDc0OGIiIG9wYWNpdHk9IjAuNyIvPjxyZWN0IHg9IjkwIiB5PSIxOTAiIHdpZHRoPSI2MCIgaGVpZ2h0PSI4MCIgZmlsbD0iIzY0NzQ4YiIgb3BhY2l0eT0iMC42IiByeD0iNSIvPjxyZWN0IHg9IjI1MCIgeT0iMjAwIiB3aWR0aD0iNjAiIGhlaWdodD0iNzAiIGZpbGw9IiM2NDc0OGIiIG9wYWNpdHk9IjAuNiIgcng9IjUiLz48L3N2Zz4=')] bg-cover bg-center opacity-40"></div>
+                    
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <button className="w-14 h-14 bg-white/90 hover:bg-white rounded-full flex items-center justify-center transition-all hover:scale-110 shadow-lg" aria-label="Play video">
+                        <svg className="w-6 h-6 text-primary ml-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                      <p className="text-white text-xs font-medium">Request Form Configuration</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Why This Matters */}
-              <div className="mb-6 pb-6 border-b border-blue-200">
-                <h4 className="font-medium text-slate-900 text-sm mb-3">Why This Matters</h4>
-                <ul className="space-y-2 text-xs text-slate-700">
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-700 mt-0.5 font-bold">•</span>
-                    <span>Streamlines request submission for loan officers</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-700 mt-0.5 font-bold">•</span>
-                    <span>Use terminology familiar to your team</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-700 mt-0.5 font-bold">•</span>
-                    <span>Ensures you collect all necessary information</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-700 mt-0.5 font-bold">•</span>
-                    <span>Reduces back-and-forth for missing data</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Tips */}
-              <div>
-                <h4 className="font-medium text-slate-900 text-sm mb-3">Tips</h4>
-                <ul className="space-y-2 text-xs text-slate-700">
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-700 mt-0.5">→</span>
-                    <span>Include fields that vary by request</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-700 mt-0.5">→</span>
-                    <span>You can always add or remove fields later</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-slate-700 mt-0.5">→</span>
-                    <span>Preview your form before finalizing</span>
-                  </li>
-                </ul>
+                {/* Tip Box */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-xs text-blue-900">
+                      <strong>Tip:</strong> Overview fields are read-only references. Detail fields can be customized with different input types and options.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </MainLayout>
+  );
+}
+
+// Field Configuration Component (similar to property fields)
+function RequestFieldConfiguration({
+  field,
+  onToggle,
+  onLabelUpdate,
+  onInputTypeUpdate,
+  onAddDropdownItem,
+  onRemoveDropdownItem,
+  editingDropdownField,
+  setEditingDropdownField,
+  newDropdownItem,
+  setNewDropdownItem,
+  isPredefinedDropdown = false,
+  isCustomField = false,
+  onRemoveCustomField
+}: {
+  field: ExtendedRequestField;
+  onToggle: (fieldId: string) => void;
+  onLabelUpdate: (fieldId: string, label: string) => void;
+  onInputTypeUpdate: (fieldId: string, type: FieldInputType) => void;
+  onAddDropdownItem: (fieldId: string) => void;
+  onRemoveDropdownItem: (fieldId: string, item: string) => void;
+  editingDropdownField: string | null;
+  setEditingDropdownField: (fieldId: string | null) => void;
+  newDropdownItem: string;
+  setNewDropdownItem: (value: string) => void;
+  isPredefinedDropdown?: boolean;
+  isCustomField?: boolean;
+  onRemoveCustomField?: (fieldId: string) => void;
+}) {
+  const availableInputTypes = getAvailableInputTypes(field.id);
+  const showDropdownManagement = (field.inputType === 'select' || field.inputType === 'multiselect') && !isPredefinedDropdown && !field.readonly;
+  const isReadOnly = field.readonly;
+
+  return (
+    <div className={`border rounded-lg p-4 transition-shadow ${
+      isCustomField ? 'border-blue-300 bg-blue-50/30' : isReadOnly ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white hover:shadow-sm'
+    }`}>
+      {/* Field Header */}
+      <div className="flex items-start gap-3 mb-3">
+        {!isReadOnly && (
+          <label className="flex items-center cursor-pointer mt-1">
+            <input
+              type="checkbox"
+              checked={field.enabled}
+              onChange={() => onToggle(field.id)}
+              disabled={field.required}
+              className="w-4 h-4 text-primary border-input rounded focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label={`Enable ${field.label} field`}
+            />
+          </label>
+        )}
+        
+        <div className="flex-1 space-y-2">
+          {isCustomField && (
+            <div className="flex items-center gap-1 mb-1">
+              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                Custom Field
+              </span>
+            </div>
+          )}
+          {/* Field Label */}
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              Field Label {field.required && <span className="text-destructive">*</span>}
+              {isReadOnly && <span className="text-xs text-slate-500 ml-2">(Read-only)</span>}
+            </label>
+            <input
+              type="text"
+              value={field.customLabel || field.label}
+              onChange={(e) => onLabelUpdate(field.id, e.target.value)}
+              disabled={!field.enabled && !field.required && !isReadOnly}
+              className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50 disabled:text-slate-500"
+              placeholder={field.label}
+            />
+          </div>
+
+          {/* Input Type Selector or Predefined Note */}
+          {!isReadOnly && !isPredefinedDropdown && (
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">
+                Input Type
+              </label>
+              <select
+                value={field.inputType}
+                onChange={(e) => onInputTypeUpdate(field.id, e.target.value as FieldInputType)}
+                disabled={!field.enabled && !field.required}
+                className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50 disabled:text-slate-500"
+                aria-label="Field input type"
+              >
+                {availableInputTypes.map((type) => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {isPredefinedDropdown && (
+            <div className="bg-amber-50 border border-amber-200 rounded p-2">
+              <p className="text-xs text-amber-900">
+                <strong>Dropdown (predefined)</strong> - Options set from Request Types configured earlier
+              </p>
+            </div>
+          )}
+
+          {/* Dropdown Items Management */}
+          {showDropdownManagement && (
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold text-foreground">
+                  Dropdown Options
+                </label>
+                <button
+                  onClick={() => setEditingDropdownField(editingDropdownField === field.id ? null : field.id)}
+                  className="text-xs text-primary hover:text-primary/80 font-medium"
+                >
+                  {editingDropdownField === field.id ? 'Done' : 'Manage Options'}
+                </button>
+              </div>
+
+              {/* Show current options */}
+              {field.dropdownOptions && field.dropdownOptions.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {field.dropdownOptions.slice(0, editingDropdownField === field.id ? undefined : 5).map((option, index) => (
+                    <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 text-xs rounded">
+                      {option}
+                      {editingDropdownField === field.id && (
+                        <button
+                          onClick={() => onRemoveDropdownItem(field.id, option)}
+                          className="hover:text-destructive"
+                          aria-label={`Remove ${option}`}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                  {!editingDropdownField && field.dropdownOptions.length > 5 && (
+                    <span className="text-xs text-slate-500">+{field.dropdownOptions.length - 5} more</span>
+                  )}
+                </div>
+              )}
+
+              {/* Add new option */}
+              {editingDropdownField === field.id && (
+                <div className="flex gap-2 pt-2 border-t border-slate-300">
+                  <input
+                    type="text"
+                    value={newDropdownItem}
+                    onChange={(e) => setNewDropdownItem(e.target.value)}
+                    placeholder="Add new option..."
+                    className="flex-1 px-2 py-1.5 text-xs border border-input rounded focus:outline-none focus:ring-2 focus:ring-ring"
+                    onKeyPress={(e) => e.key === 'Enter' && onAddDropdownItem(field.id)}
+                  />
+                  <button
+                    onClick={() => onAddDropdownItem(field.id)}
+                    disabled={!newDropdownItem.trim()}
+                    className="px-3 py-1.5 text-xs font-medium text-white bg-primary hover:bg-primary/90 rounded disabled:opacity-50 transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Delete Custom Field Button */}
+        {isCustomField && onRemoveCustomField && (
+          <button
+            onClick={() => onRemoveCustomField(field.id)}
+            className="ml-auto text-destructive hover:text-destructive/80 transition-colors p-1"
+            title="Remove custom field"
+            aria-label="Remove custom field"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

@@ -13,6 +13,10 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "YouConnect Onboarding",
   description: "Guided onboarding experience for YouConnect bank configuration",
+  icons: {
+    icon: "/realwired-logo.png",
+    apple: "/realwired-logo.png",
+  },
 };
 
 export default function RootLayout({
