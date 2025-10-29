@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Module structure (same as tenant-onboarding)
@@ -223,7 +223,7 @@ function getInitials(name: string): string {
   return name.substring(0, 2).toUpperCase();
 }
 
-export default function EditTenantPage() {
+function EditTenantContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -336,14 +336,14 @@ export default function EditTenantPage() {
 
   // Module 3: Users Setup States
   const [teamMembers, setTeamMembers] = useState([
-    { id: '1', name: 'John Smith', email: 'john.smith@unionbank.com', role: 'Bank Admin' as const, avatarColor: '#9F2E2B' },
-    { id: '2', name: 'Sarah Johnson', email: 'sarah.j@unionbank.com', role: 'Job Manager' as const, avatarColor: '#3B82F6' },
-    { id: '3', name: 'Michael Chen', email: 'michael.c@unionbank.com', role: 'Job Manager' as const, avatarColor: '#10B981' },
-    { id: '4', name: 'Emily Davis', email: 'emily.d@unionbank.com', role: 'Loan Officer' as const, avatarColor: '#F59E0B' },
+    { id: '1', name: 'John Smith', email: 'john.smith@unionbank.com', role: 'Bank Admin', avatarColor: '#9F2E2B' },
+    { id: '2', name: 'Sarah Johnson', email: 'sarah.j@unionbank.com', role: 'Job Manager', avatarColor: '#3B82F6' },
+    { id: '3', name: 'Michael Chen', email: 'michael.c@unionbank.com', role: 'Job Manager', avatarColor: '#10B981' },
+    { id: '4', name: 'Emily Davis', email: 'emily.d@unionbank.com', role: 'Loan Officer', avatarColor: '#F59E0B' },
   ]);
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
-  const [newMemberRole, setNewMemberRole] = useState<'Bank Admin' | 'Job Manager' | 'Loan Officer'>('Loan Officer');
+  const [newMemberRole, setNewMemberRole] = useState<"Loan Officer" | "Bank Admin" | "Job Manager">('Loan Officer');
   
   const [lendingGroups, setLendingGroups] = useState([
     { id: '1', name: 'Commercial Lending', type: 'Commercial' as const, regions: ['Northeast', 'Southeast'], products: ['Fixed Rate Loan', 'Line of Credit (LOC)'] },
@@ -1591,7 +1591,7 @@ export default function EditTenantPage() {
                       />
                       <select
                         value={newMemberRole}
-                        onChange={(e) => setNewMemberRole(e.target.value)}
+                        onChange={(e) => setNewMemberRole(e.target.value as "Loan Officer" | "Bank Admin" | "Job Manager")}
                         className="px-3 py-2 text-sm border border-slate-300 rounded-lg"
                         aria-label="Team member role"
                       >
@@ -2359,6 +2359,14 @@ export default function EditTenantPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function EditTenantPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>}>
+      <EditTenantContent />
+    </Suspense>
   );
 }
 

@@ -159,7 +159,7 @@ export default function PropertyRecordConfigurePage() {
       label: customFieldLabel.trim(),
       customLabel: customFieldLabel.trim(),
       category: 'advanced',
-      type: customFieldType,
+      type: customFieldType === 'multiselect' ? 'select' : customFieldType,
       enabled: true,
       required: false, // Custom fields are always optional
       inputType: customFieldType,

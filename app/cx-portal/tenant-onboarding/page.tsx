@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Define module structure
@@ -118,7 +118,7 @@ const MODULES: Module[] = [
   }
 ];
 
-export default function TenantOnboardingPage() {
+function TenantOnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -426,6 +426,14 @@ export default function TenantOnboardingPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function TenantOnboardingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>}>
+      <TenantOnboardingContent />
+    </Suspense>
   );
 }
 

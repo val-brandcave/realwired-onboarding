@@ -197,7 +197,7 @@ export function ChatBot({ isOpen, onClose, embedded = false, contextPage: _conte
     }, 800);
   };
 
-  const handleActionClick = (action: Message['actions'][0]) => {
+  const handleActionClick = (action: NonNullable<Message['actions']>[0]) => {
     if (action.type === 'ticket') {
       // Handle connect to agent request
       if (action.value === 'connect-agent') {
