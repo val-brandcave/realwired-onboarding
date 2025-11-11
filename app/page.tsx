@@ -29,7 +29,7 @@ export default function Home() {
 
         {/* Role Selection Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Tenant Onboarding Application Card */}
+          {/* Client Onboarding Application Card */}
           <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg hover:shadow-xl transition-all hover:border-[#9F2E2B] group">
             <div className="p-8">
               {/* Icon */}
@@ -41,7 +41,7 @@ export default function Home() {
 
               {/* Content */}
               <h2 className="text-2xl font-bold text-slate-900 mb-3">
-                Tenant Onboarding Application
+                Client Onboarding Application
               </h2>
               <p className="text-slate-600 mb-6">
                 Set up your YouConnect instance step-by-step. Configure organization settings, define workflows, manage teams, and complete onboarding.
@@ -60,7 +60,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* YouConnect CX Portal Card */}
+          {/* YouConnect CS Portal Card */}
           <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg hover:shadow-xl transition-all hover:border-blue-500 group">
             <div className="p-8">
               {/* Icon */}
@@ -72,15 +72,15 @@ export default function Home() {
 
               {/* Content */}
               <h2 className="text-2xl font-bold text-slate-900 mb-3">
-                YouConnect CX Portal
+                YouConnect CS Portal
               </h2>
               <p className="text-slate-600 mb-6">
-                Customer Experience portal for managing tenant onboarding. Monitor progress, track tickets, provide support, and guide clients through their setup.
+                Customer Success portal for managing client onboarding. Monitor progress, track tickets, provide support, and guide clients through their setup.
               </p>
 
               {/* CTA Button */}
               <button
-                onClick={() => router.push("/cx-portal")}
+                onClick={() => router.push("/cs-portal")}
                 className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
                 <span>Access Portal</span>

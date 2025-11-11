@@ -211,10 +211,10 @@
 
 ---
 
-## 🧭 CX Agent Portal Summary
+## 🧭 CS Agent Portal Summary
 
-- New routes: `/cx-portal`, `/cx-portal/tenant-onboarding`, `/cx-portal/edit-tenant`
-- Features: tenant list with progress and tickets, notifications, add‑tenant modal
-- Edit Tenant: module tabs, tickets table with resolve/escalate, notifications panel
+- New routes: `/cs-portal`, `/cs-portal/client-onboarding`, `/cs-portal/edit-client`
+- Features: client list with progress and tickets, notifications, add‑client modal
+- Edit Client: module tabs, tickets table with resolve/escalate, notifications panel
 - Accessibility: icon‑only buttons labeled; form elements have accessible names
 

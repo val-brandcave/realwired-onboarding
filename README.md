@@ -109,10 +109,10 @@ youconnect-discovery/
 ├── app/                              # Next.js 15 App Router pages
 │   ├── page.tsx                      # Home (auto-redirects to Module 1)
 │   ├── hub/                          # Central navigation hub
-│   ├── cx-portal/                    # CX Agent Portal (list, edit, tenant onboarding)
-│   │   ├── page.tsx                  # Tenant list
-│   │   ├── edit-tenant/page.tsx      # Deep configuration + tickets
-│   │   └── tenant-onboarding/page.tsx# Agent-side module tabs (waiting for client)
+│   ├── cs-portal/                    # CS Agent Portal (list, edit, client onboarding)
+│   │   ├── page.tsx                  # Client list
+│   │   ├── edit-client/page.tsx      # Deep configuration + tickets
+│   │   └── client-onboarding/page.tsx# Agent-side module tabs (waiting for client)
 │   ├── organization-setup/           # Module 1
 │   ├── organization-setup-intro/     # Module 1 entry
 │   ├── definitions/                  # Module 2

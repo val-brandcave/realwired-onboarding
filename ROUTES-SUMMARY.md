@@ -277,21 +277,21 @@ All modules follow the same entry page pattern:
 
 ---
 
-## CX Agent Portal (New)
+## CS Agent Portal (New)
 
-The CX Agent Portal supports RealWired agents managing multiple bank tenants during onboarding.
+The CS Agent Portal supports RealWired agents managing multiple bank clients during onboarding.
 
-### Entry: `/cx-portal`
-- Paginated tenant table with status, progress, due date, tickets
-- Add New Tenant modal (org + primary contact)
+### Entry: `/cs-portal`
+- Paginated client table with status, progress, due date, tickets
+- Add New Client modal (org + primary contact)
 - Notifications panel with unread count and categories (ticket/progress/completion)
 
-### Tenant Onboarding (agent view): `/cx-portal/tenant-onboarding`
+### Client Onboarding (agent view): `/cs-portal/client-onboarding`
 - Left‑rail modules mirror the client flow (Organization Setup, Definitions, Users, Vendors, Routing, General Settings, IT Readiness)
 - Empty states indicating "Waiting for Client Input"
 - Actions: Send Reminder, Fill Out for Client
 
-### Edit Tenant (deep configuration): `/cx-portal/edit-tenant?tenant=Union%20Bank`
+### Edit Client (deep configuration): `/cs-portal/edit-client?client=Union%20Bank`
 - Module tabs for Organization Setup, Definitions, Users, Vendors, Routing, General Settings, IT Readiness
 - Tickets view with actions (View, Mark as Resolved, Escalate)
 - Notifications slide‑out with mark‑all‑read

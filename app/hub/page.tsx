@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import { ParticipantSelector } from "./_components/ParticipantSelector";
 import { Snackbar } from "@/components/ui/Snackbar";
+import { ConfiguredBadge } from "@/components/ui/ConfiguredBadge";
 
 // Contact Modal Component
 function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -173,12 +174,24 @@ function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 }
 
 export default function HubPage() {
-  const { state, updateModuleAssignment, resetModuleProgress } = useOnboarding();
+  const { state, updateModuleAssignment, resetModuleProgress, getSectionConfigStatus } = useOnboarding();
   const router = useRouter();
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [showSnackbar, setShowSnackbar] = useState(false);
+
+  // Calculate days until go-live
+  const getDaysUntilGoLive = () => {
+    if (!state.projectedGoLiveDate) return null;
+    const today = new Date();
+    const goLiveDate = new Date(state.projectedGoLiveDate);
+    const diffTime = goLiveDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const daysUntilGoLive = getDaysUntilGoLive();
 
   // Get all participants (primary + additional)
   const allParticipants = useMemo(() => {
@@ -281,7 +294,7 @@ export default function HubPage() {
       id: 'users',
       moduleNumber: 3,
       title: 'Users Setup',
-      description: 'Download template, fill in team details, and upload for CX team configuration',
+      description: 'Download template, fill in team details, and upload for CS team configuration',
       completed: state.users.completed,
       path: '/users-intro',
       duration: '5 min',
@@ -295,10 +308,10 @@ export default function HubPage() {
       id: 'vendors',
       moduleNumber: 4,
       title: 'Vendors Setup',
-      description: 'Download template, configure vendor network, and upload for CX team setup',
+      description: 'Configure vendor types, credentials, classifications, geography, then upload template for CS team setup',
       completed: state.moduleStatuses['vendors'] === 'completed',
       path: '/vendors-intro',
-      duration: '5 min',
+      duration: '8 min',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -372,6 +385,95 @@ export default function HubPage() {
       title="YouConnect Onboarding Hub"
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Projected Go-Live Date Banner */}
+        {state.projectedGoLiveDate && (
+          <div className={`mb-6 rounded-xl p-4 border-2 ${
+            daysUntilGoLive !== null && daysUntilGoLive < 0 
+              ? 'bg-red-50 border-red-300'
+              : daysUntilGoLive !== null && daysUntilGoLive <= 7 
+              ? 'bg-orange-50 border-orange-300'
+              : completedModules === modules.length
+              ? 'bg-green-50 border-green-300'
+              : 'bg-green-50 border-green-300'
+          }`}>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  daysUntilGoLive !== null && daysUntilGoLive < 0 
+                    ? 'bg-red-100'
+                    : daysUntilGoLive !== null && daysUntilGoLive <= 7 
+                    ? 'bg-orange-100'
+                    : completedModules === modules.length
+                    ? 'bg-green-100'
+                    : 'bg-green-100'
+                }`}>
+                  <svg className={`w-6 h-6 ${
+                    daysUntilGoLive !== null && daysUntilGoLive < 0 
+                      ? 'text-red-600'
+                      : daysUntilGoLive !== null && daysUntilGoLive <= 7 
+                      ? 'text-orange-600'
+                      : completedModules === modules.length
+                      ? 'text-green-600'
+                      : 'text-green-600'
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Projected Go-Live Date</div>
+                  <div className="text-lg font-bold text-slate-900">
+                    {new Date(state.projectedGoLiveDate).toLocaleDateString('en-US', { 
+                      weekday: 'long',
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                {daysUntilGoLive !== null && (
+                  <div className="text-right">
+                    <div className="text-xs font-medium text-slate-600">Time Remaining</div>
+                    <div className={`text-2xl font-bold ${
+                      daysUntilGoLive < 0 
+                        ? 'text-red-600'
+                        : daysUntilGoLive <= 7 
+                        ? 'text-orange-600'
+                        : 'text-green-600'
+                    }`}>
+                      {daysUntilGoLive < 0 
+                        ? `${Math.abs(daysUntilGoLive)} days overdue`
+                        : daysUntilGoLive === 0
+                        ? 'Today!'
+                        : daysUntilGoLive === 1
+                        ? '1 day'
+                        : `${daysUntilGoLive} days`
+                      }
+                    </div>
+                  </div>
+                )}
+                <div className={`px-4 py-2 rounded-lg font-semibold text-sm ${
+                  daysUntilGoLive !== null && daysUntilGoLive < 0 
+                    ? 'bg-red-100 text-red-700'
+                    : daysUntilGoLive !== null && daysUntilGoLive <= 7 
+                    ? 'bg-orange-100 text-orange-700'
+                    : 'bg-green-100 text-green-700'
+                }`}>
+                  {daysUntilGoLive !== null && daysUntilGoLive < 0 
+                    ? 'Behind'
+                    : daysUntilGoLive !== null && daysUntilGoLive <= 7 
+                    ? 'Behind'
+                    : completedModules === modules.length
+                    ? 'On Track'
+                    : 'On Track'
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Next Step Hero Card (Combined Content + Video) */}
         {nextModule ? (
           <div className="bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary rounded-xl p-6 mb-6">
@@ -577,6 +679,52 @@ export default function HubPage() {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mb-2">{module.description}</p>
+                      
+                      {/* CS Team Configured Sections */}
+                      {(() => {
+                        const configuredSections = [];
+                        // Check for configured sections in this module
+                        if (module.id === 'organization-setup') {
+                          const orgStatus = getSectionConfigStatus('organization-setup', 'org-info');
+                          const brandingStatus = getSectionConfigStatus('organization-setup', 'branding');
+                          const itStatus = getSectionConfigStatus('organization-setup', 'it-config');
+                          if (orgStatus.isConfigured) configuredSections.push({ name: 'Org Info', status: orgStatus });
+                          if (brandingStatus.isConfigured) configuredSections.push({ name: 'Branding', status: brandingStatus });
+                          if (itStatus.isConfigured) configuredSections.push({ name: 'IT Config', status: itStatus });
+                        }
+                        if (module.id === 'definitions') {
+                          const propStatus = getSectionConfigStatus('definitions', 'property-categories');
+                          const reqStatus = getSectionConfigStatus('definitions', 'request-types');
+                          if (propStatus.isConfigured) configuredSections.push({ name: 'Properties', status: propStatus });
+                          if (reqStatus.isConfigured) configuredSections.push({ name: 'Requests', status: reqStatus });
+                        }
+                        if (module.id === 'vendors') {
+                          const vendorStatus = getSectionConfigStatus('vendors', 'vendor-types');
+                          if (vendorStatus.isConfigured) configuredSections.push({ name: 'Vendor Setup', status: vendorStatus });
+                        }
+                        if (module.id === 'routing') {
+                          const routingStatus = getSectionConfigStatus('routing', 'request-type-routing');
+                          if (routingStatus.isConfigured) configuredSections.push({ name: 'Routing Rules', status: routingStatus });
+                        }
+
+                        if (configuredSections.length > 0) {
+                          return (
+                            <div className="mb-3 pb-3 border-b border-border">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-medium text-muted-foreground">CS Team Configured:</span>
+                                {configuredSections.map((section, idx) => (
+                                  <ConfiguredBadge
+                                    key={idx}
+                                    status={section.status}
+                                    sectionName={section.name}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                       
                       {/* Progress Bar and Participant Assignment Row */}
                       <div className="flex items-center gap-4 flex-wrap">

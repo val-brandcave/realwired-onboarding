@@ -2,8 +2,10 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useOnboarding } from '@/lib/onboarding-context';
+import { ConfiguredBadge } from '@/components/ui/ConfiguredBadge';
 
-// Module structure (same as tenant-onboarding)
+// Module structure (same as client-onboarding)
 interface ModuleStep {
   id: string;
   label: string;
@@ -157,8 +159,10 @@ const MODULES: Module[] = [
       </svg>
     ),
     steps: [
-      { id: 'vendor-roster', label: 'Vendor Network Roster', path: 'vendor-roster' },
-      { id: 'vendor-coverage', label: 'Coverage & Specialties', path: 'vendor-coverage' },
+      { id: 'vendor-types', label: 'Vendor Types & Credentials', path: 'vendor-types' },
+      { id: 'vendor-classifications', label: 'Classifications', path: 'vendor-classifications' },
+      { id: 'vendor-geography', label: 'Geography', path: 'vendor-geography' },
+      { id: 'vendor-upload', label: 'Vendor List Template', path: 'vendor-upload' },
     ]
   },
   {
@@ -223,14 +227,24 @@ function getInitials(name: string): string {
   return name.substring(0, 2).toUpperCase();
 }
 
-function EditTenantContent() {
+function EditClientContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { state, markSectionConfigured, getSectionConfigStatus, updateProjectedGoLiveDate } = useOnboarding();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState('organization-setup');
   const [selectedStepId, setSelectedStepId] = useState('org-info');
   
-  const tenantName = searchParams.get('tenant') || 'Union Bank';
+  const clientName = searchParams.get('client') || 'Union Bank';
+  
+  // Current CS agent (in a real app, this would come from auth)
+  const currentAgent = 'Samuel Kite';
+  
+  // Timeline management - using state from context
+  const projectedGoLiveDate = state.projectedGoLiveDate || '2026-02-12';
+  const initiationDate = state.initiationDate || '2024-10-28';
+  const [showDateEditModal, setShowDateEditModal] = useState(false);
+  const [tempGoLiveDate, setTempGoLiveDate] = useState(projectedGoLiveDate);
   
   // Tab 1: Organization Info & URL
   const [customUrl, setCustomUrl] = useState("union-bank");
@@ -351,6 +365,63 @@ function EditTenantContent() {
   ]);
 
   // Module 4: Vendors States
+  
+  // Vendor Types & Credentials
+  interface VendorTypeConfig {
+    id: string;
+    name: string;
+    stateLicenseRequired: boolean;
+    eoRequired: boolean;
+    autoLiability: boolean;
+    commercialLiability: boolean;
+    masterAgreement: boolean;
+    allowToLO: boolean;
+  }
+  
+  const [vendorTypes, setVendorTypes] = useState<VendorTypeConfig[]>([
+    { id: '1', name: 'Appraisal', stateLicenseRequired: true, eoRequired: true, autoLiability: false, commercialLiability: false, masterAgreement: false, allowToLO: false },
+    { id: '2', name: 'Environmental', stateLicenseRequired: false, eoRequired: false, autoLiability: false, commercialLiability: false, masterAgreement: false, allowToLO: false },
+    { id: '3', name: 'Broker', stateLicenseRequired: false, eoRequired: false, autoLiability: false, commercialLiability: false, masterAgreement: false, allowToLO: false },
+    { id: '4', name: 'External Evaluator', stateLicenseRequired: false, eoRequired: false, autoLiability: false, commercialLiability: false, masterAgreement: false, allowToLO: false },
+  ]);
+  const [editingVendorTypeId, setEditingVendorTypeId] = useState<string | null>(null);
+
+  // Vendor Statuses, Specialties, Designations
+  interface VendorStatusConfig {
+    id: string;
+    name: string;
+    monitorCredentials: boolean;
+    isDefault: boolean;
+  }
+  
+  const [vendorStatuses, setVendorStatuses] = useState<VendorStatusConfig[]>([
+    { id: '1', name: 'New Applicant', monitorCredentials: false, isDefault: true },
+    { id: '2', name: 'Pending Applicant', monitorCredentials: false, isDefault: true },
+    { id: '3', name: 'Approved', monitorCredentials: true, isDefault: false },
+    { id: '4', name: 'Unapproved', monitorCredentials: false, isDefault: false },
+    { id: '5', name: 'Pending', monitorCredentials: true, isDefault: false },
+    { id: '6', name: 'Temporary Approval', monitorCredentials: true, isDefault: false },
+    { id: '7', name: 'Rejected', monitorCredentials: false, isDefault: false },
+  ]);
+  
+  const [vendorSpecialties, setVendorSpecialties] = useState<string[]>([
+    'Hotel', 'Convenience Store', 'Oil & Gas', 'Airport', 'Golf Course', 'Marina'
+  ]);
+  
+  const [vendorDesignations, setVendorDesignations] = useState<string[]>([
+    'MAI', 'MRICS', 'SRA', 'AI-GRS', 'AI-RRS'
+  ]);
+
+  // Vendor Regions & Sub-Regions
+  const [vendorRegions, setVendorRegions] = useState<string[]>([
+    'Northeast', 'Southeast', 'Midwest', 'Southwest', 'West'
+  ]);
+  
+  const [vendorSubRegions, setVendorSubRegions] = useState<string[]>([
+    'Metro Area', 'County', 'State Zone'
+  ]);
+
+  // Vendor Roster (Upload tab)
   const [vendors, setVendors] = useState<Vendor[]>([
     { 
       id: 'v1', 
@@ -433,7 +504,7 @@ function EditTenantContent() {
   };
 
   const handleBackToList = () => {
-    router.push('/cx-portal');
+    router.push('/cs-portal');
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -524,7 +595,7 @@ function EditTenantContent() {
                 </div>
                 <div>
                   <h1 className="text-lg font-bold text-slate-900">YouConnect</h1>
-                  <p className="text-xs text-slate-500">CX Agent Portal</p>
+                  <p className="text-xs text-slate-500">CS Agent Portal</p>
                 </div>
               </div>
             </div>
@@ -642,10 +713,39 @@ function EditTenantContent() {
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto p-6 lg:p-8">
+            {/* Projected Go-Live Date Banner */}
+            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Projected Go-Live Date</div>
+                    <div className="text-base font-bold text-slate-900">
+                      {new Date(projectedGoLiveDate).toLocaleDateString('en-US', { 
+                        month: 'long', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowDateEditModal(true)}
+                  className="px-3 py-1.5 text-sm font-medium text-blue-700 hover:text-blue-900 bg-white border-2 border-blue-300 hover:border-blue-400 rounded-lg transition-colors"
+                >
+                  Edit Date
+                </button>
+              </div>
+            </div>
+
             {/* Organization Header */}
             <div className="mb-8 flex items-start justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-slate-900 mb-2">{tenantName}</h1>
+                <h1 className="text-3xl font-bold text-slate-900 mb-2">{clientName}</h1>
                 <div className="flex items-center gap-4 text-sm text-slate-600">
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -791,7 +891,15 @@ function EditTenantContent() {
                   {selectedStepId === 'org-info' && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 mb-4">Organization Info & URL</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-bold text-slate-900">Organization Info & URL</h2>
+                      <ConfiguredBadge
+                        status={getSectionConfigStatus('org-setup-org-info')}
+                        onMarkAsConfigured={() => markSectionConfigured('org-setup-org-info', currentAgent)}
+                        onReconfigure={() => markSectionConfigured('org-setup-org-info', currentAgent)}
+                        sectionName="Organization Info"
+                      />
+                    </div>
                     
                     {/* Organization Name - Display Only */}
                     <div className="mb-6 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-lg p-4">
@@ -803,7 +911,7 @@ function EditTenantContent() {
                         </div>
                         <div>
                           <p className="text-xs text-slate-600 mb-0.5">Organization Name</p>
-                          <p className="text-lg font-bold text-slate-900">{tenantName}</p>
+                          <p className="text-lg font-bold text-slate-900">{clientName}</p>
                         </div>
                       </div>
                     </div>
@@ -836,7 +944,15 @@ function EditTenantContent() {
                   {/* TAB 2: Branding */}
                   {selectedStepId === 'branding' && (
                 <div className="space-y-6">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Branding</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Branding</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('org-setup-branding')}
+                      onMarkAsConfigured={() => markSectionConfigured('org-setup-branding', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('org-setup-branding', currentAgent)}
+                      sectionName="Branding"
+                    />
+                  </div>
                   
                   {/* Logo Upload */}
                   <div>
@@ -914,7 +1030,7 @@ function EditTenantContent() {
                       <div className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between border-t-4" style={{ borderTopColor: primaryColor }}>
                         <div className="flex items-center gap-3">
                           {logoPreview && <img src={logoPreview} alt="Logo" className="h-8 object-contain" />}
-                          <span className="text-base font-semibold">{tenantName}</span>
+                          <span className="text-base font-semibold">{clientName}</span>
                         </div>
                         <div className="px-3 py-1 rounded text-xs font-medium text-white" style={{ backgroundColor: primaryColor }}>
                           YouConnect
@@ -937,7 +1053,15 @@ function EditTenantContent() {
                   {/* TAB 3: Onboarding Participants */}
                   {selectedStepId === 'participants' && (
                 <div className="space-y-6">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Onboarding Participants</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Onboarding Participants</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('org-setup-participants')}
+                      onMarkAsConfigured={() => markSectionConfigured('org-setup-participants', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('org-setup-participants', currentAgent)}
+                      sectionName="Participants"
+                    />
+                  </div>
                   
                   {/* Primary Manager - Read Only */}
                   <div className="bg-card border border-slate-300 rounded-xl p-5">
@@ -1038,7 +1162,15 @@ function EditTenantContent() {
                   {/* TAB 4: IT Configuration */}
                   {selectedStepId === 'it-config' && (
                 <div className="space-y-6">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">IT & Security Configuration</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">IT & Security Configuration</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('org-setup-it-config')}
+                      onMarkAsConfigured={() => markSectionConfigured('org-setup-it-config', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('org-setup-it-config', currentAgent)}
+                      sectionName="IT Configuration"
+                    />
+                  </div>
                   
                   {/* Authentication Method */}
                   <div>
@@ -1249,7 +1381,15 @@ function EditTenantContent() {
                   {/* MODULE 2: DEFINITIONS TABS */}
                   {selectedModuleId === 'definitions' && selectedStepId === 'property-categories' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Property Categories & Types</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Property Categories & Types</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('definitions-property-categories')}
+                      onMarkAsConfigured={() => markSectionConfigured('definitions-property-categories', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('definitions-property-categories', currentAgent)}
+                      sectionName="Property Categories"
+                    />
+                  </div>
                   {propertyCategories.map((category) => (
                     <div key={category.id} className="border-2 border-slate-300 rounded-xl overflow-hidden">
                       <div className="p-4 bg-slate-50 flex items-center justify-between">
@@ -1325,7 +1465,15 @@ function EditTenantContent() {
 
                   {selectedModuleId === 'definitions' && selectedStepId === 'property-fields' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Property Record Fields</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Property Record Fields</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('definitions-property-fields')}
+                      onMarkAsConfigured={() => markSectionConfigured('definitions-property-fields', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('definitions-property-fields', currentAgent)}
+                      sectionName="Property Fields"
+                    />
+                  </div>
                   <div className="bg-slate-100 border border-slate-300 rounded-lg p-3 mb-4">
                     <p className="text-sm"><span className="font-semibold">{propertyFields.filter(f => f.enabled).length}</span> of {propertyFields.length} fields selected</p>
                   </div>
@@ -1369,7 +1517,15 @@ function EditTenantContent() {
 
                   {selectedModuleId === 'definitions' && selectedStepId === 'request-types' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Request Categories & Types</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Request Categories & Types</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('definitions-request-types')}
+                      onMarkAsConfigured={() => markSectionConfigured('definitions-request-types', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('definitions-request-types', currentAgent)}
+                      sectionName="Request Types"
+                    />
+                  </div>
                   {requestCategories.map((category) => (
                     <div key={category.id} className="border-2 border-slate-300 rounded-xl overflow-hidden">
                       <div className="p-4 bg-slate-50 flex items-center justify-between">
@@ -1439,7 +1595,15 @@ function EditTenantContent() {
 
                   {selectedModuleId === 'definitions' && selectedStepId === 'request-form' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Request Form Fields</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Request Form Fields</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('definitions-request-form')}
+                      onMarkAsConfigured={() => markSectionConfigured('definitions-request-form', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('definitions-request-form', currentAgent)}
+                      sectionName="Request Form"
+                    />
+                  </div>
                   <div className="bg-slate-100 border border-slate-300 rounded-lg p-3 mb-4">
                     <p className="text-sm"><span className="font-semibold">{requestFields.filter(f => f.enabled).length}</span> of {requestFields.length} fields selected</p>
                   </div>
@@ -1569,7 +1733,15 @@ function EditTenantContent() {
                   {/* MODULE 3: USERS SETUP TABS */}
                   {selectedModuleId === 'users' && selectedStepId === 'users' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Team Members</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Team Members</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('users-team-members')}
+                      onMarkAsConfigured={() => markSectionConfigured('users-team-members', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('users-team-members', currentAgent)}
+                      sectionName="Team Members"
+                    />
+                  </div>
                   
                   {/* Add Member Form */}
                   <div className="bg-slate-50 border border-slate-300 rounded-lg p-4 mb-4">
@@ -1655,7 +1827,15 @@ function EditTenantContent() {
 
                   {selectedModuleId === 'users' && selectedStepId === 'lending-groups' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Lending Groups</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Lending Groups</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('users-lending-groups')}
+                      onMarkAsConfigured={() => markSectionConfigured('users-lending-groups', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('users-lending-groups', currentAgent)}
+                      sectionName="Lending Groups"
+                    />
+                  </div>
                   
                   {/* Lending Groups List */}
                   <div className="space-y-3">
@@ -1714,210 +1894,491 @@ function EditTenantContent() {
               )}
 
                   {/* MODULE 4: VENDORS SETUP TABS */}
-                  {selectedModuleId === 'vendors' && selectedStepId === 'vendor-roster' && (
+                  
+                  {/* Tab 1: Vendor Types & Credentials */}
+                  {selectedModuleId === 'vendors' && selectedStepId === 'vendor-types' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Vendor Network Roster</h2>
-                  
-                  {/* Template Status Banner */}
-                  <div className={`border rounded-lg p-4 mb-4 ${
-                    vendorTemplateStatus === 'none' ? 'bg-amber-50 border-amber-200' :
-                    vendorTemplateStatus === 'uploaded' ? 'bg-blue-50 border-blue-200' :
-                    'bg-green-50 border-green-200'
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      {vendorTemplateStatus === 'uploaded' && (
-                        <>
-                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <div>
-                            <p className="text-sm font-semibold text-blue-900">Template Uploaded</p>
-                            <p className="text-xs text-blue-700">Client submitted vendor-template.csv on Oct 28, 2024</p>
-                          </div>
-                        </>
-                      )}
-                      {vendorTemplateStatus === 'reviewed' && (
-                        <>
-                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <div>
-                            <p className="text-sm font-semibold text-green-900">Vendors Configured</p>
-                            <p className="text-xs text-green-700">All vendors have been reviewed and added to the system</p>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Vendor Types & Credential Monitoring</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('vendors-types')}
+                      onMarkAsConfigured={() => markSectionConfigured('vendors-types', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('vendors-types', currentAgent)}
+                      sectionName="Vendor Types"
+                    />
                   </div>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Configure vendor types and specify which credentials should be monitored for each type.
+                  </p>
                   
-                  {/* Add Vendor Form */}
-                  <div className="bg-slate-50 border border-slate-300 rounded-lg p-4 mb-4">
-                    <h3 className="text-sm font-semibold text-slate-900 mb-3">Add New Vendor</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                      <input
-                        type="text"
-                        value={newVendorName}
-                        onChange={(e) => setNewVendorName(e.target.value)}
-                        placeholder="Vendor Name"
-                        className="px-3 py-2 text-sm border border-slate-300 rounded-lg"
-                      />
-                      <input
-                        type="text"
-                        value={newVendorCompany}
-                        onChange={(e) => setNewVendorCompany(e.target.value)}
-                        placeholder="Company Name"
-                        className="px-3 py-2 text-sm border border-slate-300 rounded-lg"
-                      />
-                      <input
-                        type="email"
-                        value={newVendorEmail}
-                        onChange={(e) => setNewVendorEmail(e.target.value)}
-                        placeholder="email@example.com"
-                        className="px-3 py-2 text-sm border border-slate-300 rounded-lg"
-                      />
-                      <input
-                        type="tel"
-                        value={newVendorPhone}
-                        onChange={(e) => setNewVendorPhone(e.target.value)}
-                        placeholder="(555) 123-4567"
-                        className="px-3 py-2 text-sm border border-slate-300 rounded-lg"
-                      />
-                      <input
-                        type="text"
-                        value={newVendorLicense}
-                        onChange={(e) => setNewVendorLicense(e.target.value)}
-                        placeholder="License Number"
-                        className="px-3 py-2 text-sm border border-slate-300 rounded-lg"
-                      />
-                      <button
-                        onClick={() => {
-                          if (newVendorName.trim() && newVendorEmail.trim() && newVendorCompany.trim()) {
-                            setVendors([...vendors, {
-                              id: `v-${Date.now()}`,
-                              name: newVendorName.trim(),
-                              company: newVendorCompany.trim(),
-                              email: newVendorEmail.trim(),
-                              phone: newVendorPhone.trim(),
-                              licenseNumber: newVendorLicense.trim(),
-                              coverageStates: [],
-                              specialties: []
-                            }]);
-                            setNewVendorName("");
-                            setNewVendorCompany("");
-                            setNewVendorEmail("");
-                            setNewVendorPhone("");
-                            setNewVendorLicense("");
-                          }
-                        }}
-                        disabled={!newVendorName.trim() || !newVendorEmail.trim() || !newVendorCompany.trim()}
-                        className="px-4 py-2 text-sm font-medium text-white bg-[#9F2E2B] hover:bg-[#8A2826] rounded-lg disabled:opacity-50"
-                      >
-                        Add Vendor
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Vendors List */}
-                  <div className="space-y-3">
-                    {vendors.map((vendor) => (
-                      <div key={vendor.id} className="bg-white border border-slate-300 rounded-lg p-5">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-slate-900">{vendor.name}</h3>
-                            <p className="text-sm text-slate-600">{vendor.company}</p>
-                            <div className="mt-2 space-y-1">
-                              <p className="text-sm text-slate-600">
-                                <span className="font-medium">Email:</span> {vendor.email}
-                              </p>
-                              <p className="text-sm text-slate-600">
-                                <span className="font-medium">Phone:</span> {vendor.phone}
-                              </p>
-                              <p className="text-sm text-slate-600">
-                                <span className="font-medium">License:</span> {vendor.licenseNumber || 'Not provided'}
-                              </p>
-                            </div>
-                          </div>
+                  {/* Vendor Types Cards */}
+                  <div className="space-y-4">
+                    {vendorTypes.map((type) => (
+                      <div key={type.id} className="bg-white border border-slate-300 rounded-lg p-5">
+                        <div className="flex items-center justify-between mb-4">
+                          <input
+                            type="text"
+                            value={type.name}
+                            onChange={(e) => setVendorTypes(vendorTypes.map(t => 
+                              t.id === type.id ? {...t, name: e.target.value} : t
+                            ))}
+                            onFocus={() => setEditingVendorTypeId(type.id)}
+                            onBlur={() => setEditingVendorTypeId(null)}
+                            className={`text-lg font-semibold ${editingVendorTypeId === type.id ? 'border border-blue-500' : 'border-0'} rounded px-2 py-1 focus:outline-none focus:border-blue-500`}
+                          />
                           <button
-                            onClick={() => setVendors(vendors.filter(v => v.id !== vendor.id))}
+                            onClick={() => setVendorTypes(vendorTypes.filter(t => t.id !== type.id))}
                             className="text-red-600 hover:text-red-800"
-                            aria-label="Remove vendor"
+                            aria-label="Delete vendor type"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        {/* Credential Checkboxes */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={type.stateLicenseRequired}
+                              onChange={(e) => setVendorTypes(vendorTypes.map(t => 
+                                t.id === type.id ? {...t, stateLicenseRequired: e.target.checked} : t
+                              ))}
+                              className="w-4 h-4 text-[#9F2E2B] border-slate-300 rounded focus:ring-[#9F2E2B]"
+                            />
+                            <span className="text-slate-700">State License Required</span>
+                          </label>
+                          
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={type.eoRequired}
+                              onChange={(e) => setVendorTypes(vendorTypes.map(t => 
+                                t.id === type.id ? {...t, eoRequired: e.target.checked} : t
+                              ))}
+                              className="w-4 h-4 text-[#9F2E2B] border-slate-300 rounded focus:ring-[#9F2E2B]"
+                            />
+                            <span className="text-slate-700">E&O Required</span>
+                          </label>
+                          
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={type.autoLiability}
+                              onChange={(e) => setVendorTypes(vendorTypes.map(t => 
+                                t.id === type.id ? {...t, autoLiability: e.target.checked} : t
+                              ))}
+                              className="w-4 h-4 text-[#9F2E2B] border-slate-300 rounded focus:ring-[#9F2E2B]"
+                            />
+                            <span className="text-slate-700">Auto Liability</span>
+                          </label>
+                          
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={type.commercialLiability}
+                              onChange={(e) => setVendorTypes(vendorTypes.map(t => 
+                                t.id === type.id ? {...t, commercialLiability: e.target.checked} : t
+                              ))}
+                              className="w-4 h-4 text-[#9F2E2B] border-slate-300 rounded focus:ring-[#9F2E2B]"
+                            />
+                            <span className="text-slate-700">Commercial Liability</span>
+                          </label>
+                          
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={type.masterAgreement}
+                              onChange={(e) => setVendorTypes(vendorTypes.map(t => 
+                                t.id === type.id ? {...t, masterAgreement: e.target.checked} : t
+                              ))}
+                              className="w-4 h-4 text-[#9F2E2B] border-slate-300 rounded focus:ring-[#9F2E2B]"
+                            />
+                            <span className="text-slate-700">Master Agreement</span>
+                          </label>
+                          
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={type.allowToLO}
+                              onChange={(e) => setVendorTypes(vendorTypes.map(t => 
+                                t.id === type.id ? {...t, allowToLO: e.target.checked} : t
+                              ))}
+                              className="w-4 h-4 text-[#9F2E2B] border-slate-300 rounded focus:ring-[#9F2E2B]"
+                            />
+                            <span className="text-slate-700">Allow to LO</span>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Add New Type Button */}
+                  <button
+                    onClick={() => {
+                      const newType: VendorTypeConfig = {
+                        id: Date.now().toString(),
+                        name: 'New Vendor Type',
+                        stateLicenseRequired: false,
+                        eoRequired: false,
+                        autoLiability: false,
+                        commercialLiability: false,
+                        masterAgreement: false,
+                        allowToLO: false
+                      };
+                      setVendorTypes([...vendorTypes, newType]);
+                      setEditingVendorTypeId(newType.id);
+                    }}
+                    className="w-full py-3 px-4 text-sm font-medium text-[#9F2E2B] bg-white border-2 border-dashed border-slate-300 hover:border-[#9F2E2B] rounded-lg transition-colors"
+                  >
+                    + Add New Vendor Type
+                  </button>
+                </div>
+              )}
+
+                  {/* Tab 2: Classifications (Statuses, Specialties, Designations) */}
+                  {selectedModuleId === 'vendors' && selectedStepId === 'vendor-classifications' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Vendor Classifications</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('vendors-classifications')}
+                      onMarkAsConfigured={() => markSectionConfigured('vendors-classifications', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('vendors-classifications', currentAgent)}
+                      sectionName="Vendor Classifications"
+                    />
+                  </div>
+                  
+                  {/* Section 1: Vendor Statuses */}
+                  <div className="bg-white border border-slate-300 rounded-lg p-5">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Vendor Statuses</h3>
+                    <p className="text-sm text-slate-600 mb-4">
+                      Define the different lifecycle statuses for your vendors.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {vendorStatuses.map((status) => (
+                        <div key={status.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                          <div className="flex items-center gap-3 flex-1">
+                            <input
+                              type="text"
+                              value={status.name}
+                              onChange={(e) => setVendorStatuses(vendorStatuses.map(s => 
+                                s.id === status.id ? {...s, name: e.target.value} : s
+                              ))}
+                              disabled={status.isDefault}
+                              className="flex-1 text-sm font-medium bg-transparent border-0 focus:outline-none focus:ring-0 disabled:opacity-70"
+                            />
+                            {status.isDefault && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                                System Default
+                              </span>
+                            )}
+                            <label className="flex items-center gap-1 text-xs text-slate-600">
+                              <input
+                                type="checkbox"
+                                checked={status.monitorCredentials}
+                                onChange={(e) => setVendorStatuses(vendorStatuses.map(s => 
+                                  s.id === status.id ? {...s, monitorCredentials: e.target.checked} : s
+                                ))}
+                                className="w-3 h-3 text-[#9F2E2B] border-slate-300 rounded"
+                              />
+                              Monitor
+                            </label>
+                          </div>
+                          {!status.isDefault && (
+                            <button
+                              onClick={() => setVendorStatuses(vendorStatuses.filter(s => s.id !== status.id))}
+                              className="text-red-600 hover:text-red-800 ml-2"
+                              aria-label="Delete status"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        setVendorStatuses([...vendorStatuses, {
+                          id: Date.now().toString(),
+                          name: 'New Status',
+                          monitorCredentials: false,
+                          isDefault: false
+                        }]);
+                      }}
+                      className="mt-3 px-4 py-2 text-sm font-medium text-[#9F2E2B] bg-white border border-[#9F2E2B] hover:bg-[#9F2E2B] hover:text-white rounded-lg transition-colors"
+                    >
+                      + Add Status
+                    </button>
+                  </div>
+                  
+                  {/* Section 2: Vendor Specialties */}
+                  <div className="bg-white border border-slate-300 rounded-lg p-5">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Vendor Specialties</h3>
+                    <p className="text-sm text-slate-600 mb-4">
+                      Property specialties that vendors can be categorized by.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {vendorSpecialties.map((specialty, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                          <input
+                            type="text"
+                            value={specialty}
+                            onChange={(e) => {
+                              const updated = [...vendorSpecialties];
+                              updated[index] = e.target.value;
+                              setVendorSpecialties(updated);
+                            }}
+                            className="flex-1 text-sm font-medium bg-transparent border-0 focus:outline-none focus:ring-0"
+                          />
+                          <button
+                            onClick={() => setVendorSpecialties(vendorSpecialties.filter((_, i) => i !== index))}
+                            className="text-red-600 hover:text-red-800 ml-2"
+                            aria-label="Delete specialty"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </button>
                         </div>
-                        {vendor.coverageStates.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-slate-200">
-                            <p className="text-xs font-medium text-slate-700 mb-1">Coverage States:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {vendor.coverageStates.map((state) => (
-                                <span key={state} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                                  {state}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {vendor.specialties.length > 0 && (
-                          <div className="mt-2">
-                            <p className="text-xs font-medium text-slate-700 mb-1">Specialties:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {vendor.specialties.map((specialty) => (
-                                <span key={specialty} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                                  {specialty}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => setVendorSpecialties([...vendorSpecialties, 'New Specialty'])}
+                      className="mt-3 px-4 py-2 text-sm font-medium text-[#9F2E2B] bg-white border border-[#9F2E2B] hover:bg-[#9F2E2B] hover:text-white rounded-lg transition-colors"
+                    >
+                      + Add Specialty
+                    </button>
+                  </div>
+                  
+                  {/* Section 3: Vendor Designations */}
+                  <div className="bg-white border border-slate-300 rounded-lg p-5">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Vendor Designations</h3>
+                    <p className="text-sm text-slate-600 mb-4">
+                      Professional certifications and designations for vendors.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {vendorDesignations.map((designation, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                          <input
+                            type="text"
+                            value={designation}
+                            onChange={(e) => {
+                              const updated = [...vendorDesignations];
+                              updated[index] = e.target.value;
+                              setVendorDesignations(updated);
+                            }}
+                            className="flex-1 text-sm font-medium bg-transparent border-0 focus:outline-none focus:ring-0"
+                          />
+                          <button
+                            onClick={() => setVendorDesignations(vendorDesignations.filter((_, i) => i !== index))}
+                            className="text-red-600 hover:text-red-800 ml-2"
+                            aria-label="Delete designation"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => setVendorDesignations([...vendorDesignations, 'New Designation'])}
+                      className="mt-3 px-4 py-2 text-sm font-medium text-[#9F2E2B] bg-white border border-[#9F2E2B] hover:bg-[#9F2E2B] hover:text-white rounded-lg transition-colors"
+                    >
+                      + Add Designation
+                    </button>
                   </div>
                 </div>
               )}
 
-                  {selectedModuleId === 'vendors' && selectedStepId === 'vendor-coverage' && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Vendor Coverage & Specialties</h2>
+                  {/* Tab 3: Geography (Regions & Sub-Regions) */}
+                  {selectedModuleId === 'vendors' && selectedStepId === 'vendor-geography' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Vendor Geography</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('vendors-geography')}
+                      onMarkAsConfigured={() => markSectionConfigured('vendors-geography', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('vendors-geography', currentAgent)}
+                      sectionName="Vendor Geography"
+                    />
+                  </div>
+                  
+                  {/* Section 1: Vendor Regions */}
                   <div className="bg-white border border-slate-300 rounded-lg p-5">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Vendor Regions</h3>
                     <p className="text-sm text-slate-600 mb-4">
-                      Configure which states and property types each vendor can service. This information is used for intelligent vendor matching during order routing.
+                      Define geographic regions for vendor organization.
                     </p>
                     
-                    {vendors.map((vendor) => (
-                      <div key={vendor.id} className="mb-4 pb-4 border-b border-slate-200 last:border-b-0">
-                        <h4 className="font-semibold text-slate-900 mb-2">{vendor.name} - {vendor.company}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-slate-700 mb-2">Coverage States</label>
-                            <div className="flex flex-wrap gap-1">
-                              {vendor.coverageStates.map((state) => (
-                                <span key={state} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                                  {state}
-                                </span>
-                              ))}
-                              {vendor.coverageStates.length === 0 && (
-                                <span className="text-xs text-slate-500 italic">No states assigned</span>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-slate-700 mb-2">Specialties</label>
-                            <div className="flex flex-wrap gap-1">
-                              {vendor.specialties.map((specialty) => (
-                                <span key={specialty} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                                  {specialty}
-                                </span>
-                              ))}
-                              {vendor.specialties.length === 0 && (
-                                <span className="text-xs text-slate-500 italic">No specialties assigned</span>
-                              )}
-                            </div>
-                          </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {vendorRegions.map((region, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                          <input
+                            type="text"
+                            value={region}
+                            onChange={(e) => {
+                              const updated = [...vendorRegions];
+                              updated[index] = e.target.value;
+                              setVendorRegions(updated);
+                            }}
+                            className="flex-1 text-sm font-medium bg-transparent border-0 focus:outline-none focus:ring-0"
+                          />
+                          <button
+                            onClick={() => setVendorRegions(vendorRegions.filter((_, i) => i !== index))}
+                            className="text-red-600 hover:text-red-800 ml-2"
+                            aria-label="Delete region"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
                         </div>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => setVendorRegions([...vendorRegions, 'New Region'])}
+                      className="mt-3 px-4 py-2 text-sm font-medium text-[#9F2E2B] bg-white border border-[#9F2E2B] hover:bg-[#9F2E2B] hover:text-white rounded-lg transition-colors"
+                    >
+                      + Add Region
+                    </button>
+                  </div>
+                  
+                  {/* Section 2: Vendor Sub-Regions */}
+                  <div className="bg-white border border-slate-300 rounded-lg p-5">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Vendor Sub-Regions</h3>
+                    <p className="text-sm text-slate-600 mb-4">
+                      Define sub-regions for more granular geographic organization.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {vendorSubRegions.map((subRegion, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                          <input
+                            type="text"
+                            value={subRegion}
+                            onChange={(e) => {
+                              const updated = [...vendorSubRegions];
+                              updated[index] = e.target.value;
+                              setVendorSubRegions(updated);
+                            }}
+                            className="flex-1 text-sm font-medium bg-transparent border-0 focus:outline-none focus:ring-0"
+                          />
+                          <button
+                            onClick={() => setVendorSubRegions(vendorSubRegions.filter((_, i) => i !== index))}
+                            className="text-red-600 hover:text-red-800 ml-2"
+                            aria-label="Delete sub-region"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => setVendorSubRegions([...vendorSubRegions, 'New Sub-Region'])}
+                      className="mt-3 px-4 py-2 text-sm font-medium text-[#9F2E2B] bg-white border border-[#9F2E2B] hover:bg-[#9F2E2B] hover:text-white rounded-lg transition-colors"
+                    >
+                      + Add Sub-Region
+                    </button>
+                  </div>
+                </div>
+              )}
+
+                  {/* Tab 4: Vendor List Template */}
+                  {selectedModuleId === 'vendors' && selectedStepId === 'vendor-upload' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Vendor List Template</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('vendors-upload')}
+                      onMarkAsConfigured={() => markSectionConfigured('vendors-upload', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('vendors-upload', currentAgent)}
+                      sectionName="Vendor Template"
+                    />
+                  </div>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Review the vendor roster template submitted by the client.
+                  </p>
+
+                  {/* Template Information */}
+                  <div className="bg-white border border-slate-300 rounded-lg p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base font-semibold text-slate-900">Template Information</h3>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            // Simulate download
+                            const csvContent = "Vendor Name,Company,Email,Phone,License Number,Coverage States\nJohn Appraiser,ABC Appraisals Inc,john@abcappraisals.com,(555) 123-4567,LA-12345,California|Nevada\nJane Reviewer,XYZ Reviews LLC,jane@xyzreviews.com,(555) 987-6543,LR-67890,Arizona|Texas|New Mexico";
+                            const blob = new Blob([csvContent], { type: 'text/csv' });
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'union-bank-vendor-template.csv';
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-[#9F2E2B] bg-white border border-[#9F2E2B] hover:bg-[#9F2E2B] hover:text-white rounded-lg flex items-center gap-2 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download Template
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('Mark all vendors as configured in the system?')) {
+                              // In a real app, this would update the status
+                              alert('Vendors marked as configured');
+                            }
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Mark as Configured
+                        </button>
                       </div>
-                    ))}
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between py-2 border-b border-slate-200">
+                        <span className="text-slate-600">File Name:</span>
+                        <span className="font-medium text-slate-900">vendor-template.csv</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-slate-200">
+                        <span className="text-slate-600">Upload Date:</span>
+                        <span className="font-medium text-slate-900">Oct 28, 2024</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-slate-200">
+                        <span className="text-slate-600">Total Vendors:</span>
+                        <span className="font-medium text-slate-900">2</span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="text-slate-600">Status:</span>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                          vendorTemplateStatus === 'reviewed' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {vendorTemplateStatus === 'reviewed' ? 'Reviewed' : 'Pending Review'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1925,7 +2386,15 @@ function EditTenantContent() {
                   {/* MODULE 5: ROUTING TABS */}
                   {selectedModuleId === 'routing' && selectedStepId === 'request-type-routing' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Request Type Routing Rules</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Request Type Routing Rules</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('routing-request-type')}
+                      onMarkAsConfigured={() => markSectionConfigured('routing-request-type', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('routing-request-type', currentAgent)}
+                      sectionName="Request Type Routing"
+                    />
+                  </div>
                   {routingRules.filter(r => r.type === 'Request Type').map((rule) => (
                     <div key={rule.id} className="bg-white border border-slate-300 rounded-lg p-4">
                       <div className="flex items-start justify-between">
@@ -1954,7 +2423,15 @@ function EditTenantContent() {
 
                   {selectedModuleId === 'routing' && selectedStepId === 'logical-routing' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Logical Routing Rules</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Logical Routing Rules</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('routing-logical')}
+                      onMarkAsConfigured={() => markSectionConfigured('routing-logical', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('routing-logical', currentAgent)}
+                      sectionName="Logical Routing"
+                    />
+                  </div>
                   {routingRules.filter(r => r.type === 'Logical').map((rule) => (
                     <div key={rule.id} className="bg-white border border-slate-300 rounded-lg p-4">
                       <div className="flex items-start justify-between">
@@ -1975,7 +2452,15 @@ function EditTenantContent() {
 
                   {selectedModuleId === 'routing' && selectedStepId === 'assigned-area' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Assigned Area Routing Rules</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Assigned Area Routing Rules</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('routing-assigned-area')}
+                      onMarkAsConfigured={() => markSectionConfigured('routing-assigned-area', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('routing-assigned-area', currentAgent)}
+                      sectionName="Assigned Area Routing"
+                    />
+                  </div>
                   {routingRules.filter(r => r.type === 'Assigned Area').map((rule) => (
                     <div key={rule.id} className="bg-white border border-slate-300 rounded-lg p-4">
                       <div className="flex items-start justify-between">
@@ -1997,7 +2482,15 @@ function EditTenantContent() {
                   {/* MODULE 6: GENERAL SETTINGS TABS */}
                   {selectedModuleId === 'general-settings' && selectedStepId === 'workflow-timers' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Workflow & Timer Configuration</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Workflow & Timer Configuration</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('general-settings-workflow')}
+                      onMarkAsConfigured={() => markSectionConfigured('general-settings-workflow', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('general-settings-workflow', currentAgent)}
+                      sectionName="Workflow Timers"
+                    />
+                  </div>
                   <div className="space-y-3">
                     <div className="bg-white border border-slate-300 rounded-lg p-4">
                       <label className="block text-sm font-semibold text-slate-900 mb-2">Order Submitted to Vendor Solicitation</label>
@@ -2044,7 +2537,15 @@ function EditTenantContent() {
 
                   {selectedModuleId === 'general-settings' && selectedStepId === 'bid-engagement' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Bid & Engagement Panel Settings</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Bid & Engagement Panel Settings</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('general-settings-bid-engagement')}
+                      onMarkAsConfigured={() => markSectionConfigured('general-settings-bid-engagement', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('general-settings-bid-engagement', currentAgent)}
+                      sectionName="Bid Engagement"
+                    />
+                  </div>
                   <div className="space-y-3">
                     {['Option 1', 'Option 2', 'Option 3', 'Option 4'].map((option) => (
                       <label key={option} className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer ${bidEngagementPanel === option ? 'border-[#9F2E2B] bg-red-50' : 'border-slate-300'}`}>
@@ -2066,7 +2567,15 @@ function EditTenantContent() {
 
                   {selectedModuleId === 'general-settings' && selectedStepId === 'notifications' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Notification Settings</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Notification Settings</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('general-settings-notifications')}
+                      onMarkAsConfigured={() => markSectionConfigured('general-settings-notifications', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('general-settings-notifications', currentAgent)}
+                      sectionName="Notifications"
+                    />
+                  </div>
                   <div className="text-center py-8 text-slate-600">
                     <p>Notification preferences and email templates</p>
                   </div>
@@ -2076,7 +2585,15 @@ function EditTenantContent() {
                   {/* MODULE 7: IT READINESS TABS */}
                   {selectedModuleId === 'it-checklist' && selectedStepId === 'it-checklist' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">IT Readiness Checklist</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">IT Readiness Checklist</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('it-checklist-readiness')}
+                      onMarkAsConfigured={() => markSectionConfigured('it-checklist-readiness', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('it-checklist-readiness', currentAgent)}
+                      sectionName="IT Readiness"
+                    />
+                  </div>
                   <div className="space-y-2">
                     {itChecklistItems.map((item) => (
                       <div key={item.id} className="flex items-center gap-4 p-4 bg-white border border-slate-300 rounded-lg">
@@ -2122,7 +2639,15 @@ function EditTenantContent() {
 
                   {selectedModuleId === 'it-checklist' && selectedStepId === 'security-compliance' && (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Security & Compliance</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Security & Compliance</h2>
+                    <ConfiguredBadge
+                      status={getSectionConfigStatus('it-checklist-security')}
+                      onMarkAsConfigured={() => markSectionConfigured('it-checklist-security', currentAgent)}
+                      onReconfigure={() => markSectionConfigured('it-checklist-security', currentAgent)}
+                      sectionName="Security & Compliance"
+                    />
+                  </div>
                   <div className="text-center py-8 text-slate-600">
                     <p>Security compliance verification and documentation</p>
                   </div>
@@ -2130,7 +2655,7 @@ function EditTenantContent() {
               )}
 
                   {/* Empty state for other modules */}
-                  {selectedModuleId !== 'organization-setup' && selectedModuleId !== 'definitions' && selectedModuleId !== 'users' && selectedModuleId !== 'routing' && selectedModuleId !== 'general-settings' && selectedModuleId !== 'it-checklist' && (
+                  {selectedModuleId !== 'organization-setup' && selectedModuleId !== 'definitions' && selectedModuleId !== 'users' && selectedModuleId !== 'vendors' && selectedModuleId !== 'routing' && selectedModuleId !== 'general-settings' && selectedModuleId !== 'it-checklist' && (
                 <div className="text-center py-12">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-full mb-4">
                     <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2358,14 +2883,83 @@ function EditTenantContent() {
           </div>
         </div>
       )}
+
+      {/* Go-Live Date Edit Modal */}
+      {showDateEditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="border-b border-slate-200 p-5 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Edit Projected Go-Live Date</h2>
+              <button
+                onClick={() => setShowDateEditModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Close modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="edit-go-live-date" className="block text-sm font-semibold text-slate-700 mb-2">
+                  Projected Go-Live Date <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id="edit-go-live-date"
+                  type="date"
+                  value={tempGoLiveDate}
+                  onChange={(e) => setTempGoLiveDate(e.target.value)}
+                  min={initiationDate}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] focus:border-transparent text-sm"
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  This date will be visible to the client throughout their onboarding process
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-xs text-blue-900">
+                    Adjusting this date will update the timeline shown to {clientName} and affect their status heat indicator.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+                <button
+                  onClick={() => setShowDateEditModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    updateProjectedGoLiveDate(tempGoLiveDate);
+                    setShowDateEditModal(false);
+                    alert(`Go-Live date updated to ${new Date(tempGoLiveDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. This will be reflected across the client list and client hub.`);
+                  }}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md"
+                >
+                  Update Date
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-export default function EditTenantPage() {
+export default function EditClientPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>}>
-      <EditTenantContent />
+      <EditClientContent />
     </Suspense>
   );
 }

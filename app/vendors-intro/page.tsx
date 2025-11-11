@@ -24,32 +24,32 @@ export default function VendorsIntroPage() {
 
           {/* Description as bullet points */}
           <p className="text-sm text-slate-600 mb-2">
-            We've simplified vendor setup with a template-based approach:
+            We'll walk you through a comprehensive vendor configuration:
           </p>
           <ul className="space-y-1.5 mb-5">
             <li className="flex items-start gap-2 text-slate-600 text-sm">
               <svg className="w-4 h-4 text-[#9F2E2B] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span>Download the vendor template spreadsheet</span>
+              <span>Configure vendor types & credential monitoring</span>
             </li>
             <li className="flex items-start gap-2 text-slate-600 text-sm">
               <svg className="w-4 h-4 text-[#9F2E2B] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span>Fill in vendor details, licenses, and coverage areas</span>
+              <span>Set up statuses, specialties, and designations</span>
             </li>
             <li className="flex items-start gap-2 text-slate-600 text-sm">
               <svg className="w-4 h-4 text-[#9F2E2B] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span>Schedule a call with our CX team (optional)</span>
+              <span>Define regions and sub-regions</span>
             </li>
             <li className="flex items-start gap-2 text-slate-600 text-sm">
               <svg className="w-4 h-4 text-[#9F2E2B] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span>Upload template - we'll configure everything</span>
+              <span>Upload vendor roster template for CS team setup</span>
             </li>
           </ul>
 
@@ -58,12 +58,12 @@ export default function VendorsIntroPage() {
             <svg className="w-4 h-4 text-[#9F2E2B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-sm">Approximate completion time – <strong className="text-slate-900">5 minutes</strong></span>
+            <span className="text-sm">Approximate completion time – <strong className="text-slate-900">8 minutes</strong></span>
           </div>
 
           {/* CTA Button with brand color */}
           <button
-            onClick={() => router.push('/vendors')}
+            onClick={() => router.push('/vendors/configure/types')}
             className="w-full py-3 px-6 text-base font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] focus:outline-none focus:ring-4 focus:ring-[#9F2E2B]/30 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] transform"
           >
             Let's Get Started! →

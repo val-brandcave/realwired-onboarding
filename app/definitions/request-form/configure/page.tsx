@@ -11,6 +11,7 @@ type FieldInputType = 'text' | 'textarea' | 'number' | 'email' | 'tel' | 'date' 
 interface ExtendedRequestField extends RequestFormField {
   inputType?: FieldInputType;
   dropdownOptions?: string[];
+  systemRequired?: boolean; // Cannot be changed by user
 }
 
 // Get available input types based on field context
@@ -86,7 +87,7 @@ export default function RequestFormConfigurePage() {
   
   // Track progress when user lands on this step
   useEffect(() => {
-    updateModuleProgress('definitions', 4, 4); // Step 4 of 4 - 100%
+    updateModuleProgress('definitions', 4, 5); // Step 4 of 5 - 80%
   }, [updateModuleProgress]);
 
   // Initialize fields with input types
@@ -107,12 +108,23 @@ export default function RequestFormConfigurePage() {
   const [customFieldType, setCustomFieldType] = useState<FieldInputType>('text');
   const [customFieldOptions, setCustomFieldOptions] = useState<string[]>([]);
   const [newCustomOption, setNewCustomOption] = useState('');
+  const [customFieldRequired, setCustomFieldRequired] = useState(false);
 
   const toggleField = (fieldId: string) => {
     setFields(prevFields =>
       prevFields.map(field =>
-        field.id === fieldId && !field.readonly && !field.required
+        field.id === fieldId && !field.readonly && !field.systemRequired
           ? { ...field, enabled: !field.enabled }
+          : field
+      )
+    );
+  };
+
+  const toggleRequired = (fieldId: string) => {
+    setFields(prevFields =>
+      prevFields.map(field =>
+        field.id === fieldId && !field.readonly && !field.systemRequired
+          ? { ...field, required: !field.required }
           : field
       )
     );
@@ -175,7 +187,8 @@ export default function RequestFormConfigurePage() {
       category: 'details',
       type: customFieldType === 'multiselect' ? 'select' : customFieldType,
       enabled: true,
-      required: false, // Custom fields are always optional
+      required: customFieldRequired,
+      systemRequired: false,
       readonly: false,
       inputType: customFieldType,
       dropdownOptions: (customFieldType === 'select' || customFieldType === 'multiselect') 
@@ -190,6 +203,7 @@ export default function RequestFormConfigurePage() {
     setCustomFieldType('text');
     setCustomFieldOptions([]);
     setNewCustomOption('');
+    setCustomFieldRequired(false);
     setShowCustomFieldForm(false);
   };
 
@@ -212,10 +226,9 @@ export default function RequestFormConfigurePage() {
 
   const handleContinue = () => {
     updateDefinitions({ 
-      requestFormFields: fields,
-      completed: true
+      requestFormFields: fields
     });
-    router.push('/definitions/complete');
+    router.push('/definitions/bid-panels');
   };
 
   const overviewFields = fields.filter(f => f.category === 'overview');
@@ -227,6 +240,7 @@ export default function RequestFormConfigurePage() {
     { id: '2', label: 'Property Fields', status: 'completed' as const },
     { id: '3', label: 'Request Types', status: 'completed' as const },
     { id: '4', label: 'Request Form', status: 'in_progress' as const },
+    { id: '5', label: 'Bid Panels', status: 'not_started' as const },
   ];
 
   return (
@@ -284,6 +298,7 @@ export default function RequestFormConfigurePage() {
                     key={field.id}
                     field={field}
                     onToggle={toggleField}
+                    onToggleRequired={toggleRequired}
                     onLabelUpdate={updateFieldLabel}
                     onInputTypeUpdate={updateFieldInputType}
                     onAddDropdownItem={addDropdownItem}
@@ -317,6 +332,7 @@ export default function RequestFormConfigurePage() {
                     key={field.id}
                     field={field}
                     onToggle={toggleField}
+                    onToggleRequired={toggleRequired}
                     onLabelUpdate={updateFieldLabel}
                     onInputTypeUpdate={updateFieldInputType}
                     onAddDropdownItem={addDropdownItem}
@@ -379,6 +395,19 @@ export default function RequestFormConfigurePage() {
                       </select>
                     </div>
 
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="custom-field-required-request"
+                        type="checkbox"
+                        checked={customFieldRequired}
+                        onChange={(e) => setCustomFieldRequired(e.target.checked)}
+                        className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
+                      />
+                      <label htmlFor="custom-field-required-request" className="text-xs font-medium text-foreground cursor-pointer">
+                        Mark as required field
+                      </label>
+                    </div>
+
                     {(customFieldType === 'select' || customFieldType === 'multiselect') && (
                       <div>
                         <label className="block text-xs font-medium text-foreground mb-1">
@@ -436,6 +465,7 @@ export default function RequestFormConfigurePage() {
                           setCustomFieldType('text');
                           setCustomFieldOptions([]);
                           setNewCustomOption('');
+                          setCustomFieldRequired(false);
                         }}
                         className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
                       >
@@ -459,7 +489,7 @@ export default function RequestFormConfigurePage() {
                 onClick={handleContinue}
                 className="px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all"
               >
-                Complete Definitions Module →
+                Next: Configure Bid Panels →
               </button>
             </div>
           </div>
@@ -524,6 +554,7 @@ export default function RequestFormConfigurePage() {
 function RequestFieldConfiguration({
   field,
   onToggle,
+  onToggleRequired,
   onLabelUpdate,
   onInputTypeUpdate,
   onAddDropdownItem,
@@ -538,6 +569,7 @@ function RequestFieldConfiguration({
 }: {
   field: ExtendedRequestField;
   onToggle: (fieldId: string) => void;
+  onToggleRequired: (fieldId: string) => void;
   onLabelUpdate: (fieldId: string, label: string) => void;
   onInputTypeUpdate: (fieldId: string, type: FieldInputType) => void;
   onAddDropdownItem: (fieldId: string) => void;
@@ -556,7 +588,7 @@ function RequestFieldConfiguration({
 
   return (
     <div className={`border rounded-lg p-4 transition-shadow ${
-      isCustomField ? 'border-blue-300 bg-blue-50/30' : isReadOnly ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white hover:shadow-sm'
+      isCustomField ? 'border-blue-300 bg-blue-50/30' : field.systemRequired ? 'border-amber-200 bg-amber-50/30' : isReadOnly ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white hover:shadow-sm'
     }`}>
       {/* Field Header */}
       <div className="flex items-start gap-3 mb-3">
@@ -566,7 +598,7 @@ function RequestFieldConfiguration({
               type="checkbox"
               checked={field.enabled}
               onChange={() => onToggle(field.id)}
-              disabled={field.required}
+              disabled={field.systemRequired}
               className="w-4 h-4 text-primary border-input rounded focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label={`Enable ${field.label} field`}
             />
@@ -574,13 +606,23 @@ function RequestFieldConfiguration({
         )}
         
         <div className="flex-1 space-y-2">
-          {isCustomField && (
-            <div className="flex items-center gap-1 mb-1">
+          {/* Badges */}
+          <div className="flex items-center gap-1 mb-1 flex-wrap">
+            {isCustomField && (
               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
                 Custom Field
               </span>
-            </div>
-          )}
+            )}
+            {field.systemRequired && (
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+                System Required
+              </span>
+            )}
+          </div>
+
           {/* Field Label */}
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
@@ -591,11 +633,34 @@ function RequestFieldConfiguration({
               type="text"
               value={field.customLabel || field.label}
               onChange={(e) => onLabelUpdate(field.id, e.target.value)}
-              disabled={!field.enabled && !field.required && !isReadOnly}
+              disabled={!field.enabled && !field.required && !field.systemRequired && !isReadOnly}
               className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50 disabled:text-slate-500"
               placeholder={field.label}
             />
           </div>
+
+          {/* Required Toggle */}
+          {!isReadOnly && (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id={`required-${field.id}`}
+                checked={field.required || false}
+                onChange={() => onToggleRequired(field.id)}
+                disabled={field.systemRequired || (!field.enabled && !field.required)}
+                className="w-4 h-4 text-primary border-input rounded focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label={`Mark ${field.label} as required`}
+              />
+              <label htmlFor={`required-${field.id}`} className="text-xs font-medium text-slate-600 cursor-pointer flex items-center gap-1">
+                Required Field
+                {field.systemRequired && (
+                  <svg className="w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 20 20" title="System required - cannot be changed">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </label>
+            </div>
+          )}
 
           {/* Input Type Selector or Predefined Note */}
           {!isReadOnly && !isPredefinedDropdown && (
@@ -606,7 +671,7 @@ function RequestFieldConfiguration({
               <select
                 value={field.inputType}
                 onChange={(e) => onInputTypeUpdate(field.id, e.target.value as FieldInputType)}
-                disabled={!field.enabled && !field.required}
+                disabled={(!field.enabled && !field.required && !field.systemRequired)}
                 className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50 disabled:text-slate-500"
                 aria-label="Field input type"
               >
@@ -621,6 +686,15 @@ function RequestFieldConfiguration({
             <div className="bg-amber-50 border border-amber-200 rounded p-2">
               <p className="text-xs text-amber-900">
                 <strong>Dropdown (predefined)</strong> - Options set from Request Types configured earlier
+              </p>
+            </div>
+          )}
+
+          {/* System Required Info */}
+          {field.systemRequired && !isReadOnly && (
+            <div className="bg-amber-50 border border-amber-200 rounded p-2">
+              <p className="text-xs text-amber-900">
+                <strong>Note:</strong> This field is required by the system and cannot be disabled or made optional. You can only change its label.
               </p>
             </div>
           )}

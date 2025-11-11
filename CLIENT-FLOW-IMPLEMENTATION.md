@@ -256,18 +256,18 @@ const getModuleStatus = (module, index) => {
 
 ---
 
-## 🧭 CX Agent Portal (Overview)
+## 🧭 CS Agent Portal (Overview)
 
-The CX Agent Portal allows RealWired agents to monitor and assist multiple tenant onboardings.
+The CS Agent Portal allows RealWired agents to monitor and assist multiple client onboardings.
 
 ### Key Routes
-- `/cx-portal` — Tenant list with status, progress, due dates, and ticket counts
-- `/cx-portal/tenant-onboarding` — Agent view of the module tabs in a read‑only/assistive state
-- `/cx-portal/edit-tenant` — Deep configuration with module tabs, ticket management, and notifications
+- `/cs-portal` — Client list with status, progress, due dates, and ticket counts
+- `/cs-portal/client-onboarding` — Agent view of the module tabs in a read‑only/assistive state
+- `/cs-portal/edit-client` — Deep configuration with module tabs, ticket management, and notifications
 
 ### Core Capabilities
-- Add new tenant (organization + primary contact)
-- View per‑tenant progress/tickets
+- Add new client (organization + primary contact)
+- View per‑client progress/tickets
 - Raise, view, and resolve onboarding tickets
 - Notifications slide‑out with mark‑all‑read
 - Accessibility improvements: all icon‑only buttons have `aria-label`; all form controls have accessible names

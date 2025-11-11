@@ -4,152 +4,184 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Snackbar } from '@/components/ui/Snackbar';
 
-// Sample tenant data
-interface Tenant {
+// Sample client data
+interface Client {
   id: string;
   name: string;
   initiationDate: string;
   status: 'Not Started' | 'In Progress' | 'Completed' | 'On Hold';
   progress: number;
   dueDate: string;
+  projectedGoLiveDate: string;
   tickets: number;
 }
 
-const SAMPLE_TENANTS: Tenant[] = [
+// Calculate status heat based on progress vs time
+function getStatusHeat(progress: number, initiationDate: string, projectedGoLiveDate: string): 'hot' | 'warm' | 'cold' {
+  const today = new Date();
+  const start = new Date(initiationDate);
+  const end = new Date(projectedGoLiveDate);
+  
+  const totalDuration = end.getTime() - start.getTime();
+  const elapsedTime = today.getTime() - start.getTime();
+  const expectedProgress = (elapsedTime / totalDuration) * 100;
+  
+  // If actual progress is significantly behind expected progress
+  if (progress < expectedProgress - 15) return 'hot'; // More than 15% behind
+  if (progress < expectedProgress - 5) return 'warm'; // 5-15% behind
+  return 'cold'; // On track or ahead
+}
+
+const SAMPLE_CLIENTS: Client[] = [
   {
     id: '1',
     name: 'Union Bank',
-    initiationDate: '2024-10-01',
+    initiationDate: '2024-10-28',
     status: 'In Progress',
-    progress: 65,
-    dueDate: '2024-11-15',
+    progress: 35,
+    dueDate: '2024-11-25',
+    projectedGoLiveDate: '2026-02-12',
     tickets: 3
   },
   {
     id: '2',
     name: 'First National Credit Union',
-    initiationDate: '2024-10-05',
+    initiationDate: '2024-09-15',
     status: 'In Progress',
-    progress: 42,
-    dueDate: '2024-11-20',
-    tickets: 5
+    progress: 75,
+    dueDate: '2024-11-10',
+    projectedGoLiveDate: '2024-12-05',
+    tickets: 2
   },
   {
     id: '3',
     name: 'Coastal Community Bank',
-    initiationDate: '2024-09-28',
+    initiationDate: '2024-08-20',
     status: 'Completed',
     progress: 100,
-    dueDate: '2024-11-10',
+    dueDate: '2024-10-15',
+    projectedGoLiveDate: '2024-11-01',
     tickets: 0
   },
   {
     id: '4',
     name: 'Metro Financial Services',
-    initiationDate: '2024-10-12',
+    initiationDate: '2024-10-01',
     status: 'In Progress',
-    progress: 28,
-    dueDate: '2024-11-25',
-    tickets: 8
+    progress: 25,
+    dueDate: '2024-11-20',
+    projectedGoLiveDate: '2026-02-12',
+    tickets: 5
   },
   {
     id: '5',
     name: 'Heritage Savings Bank',
-    initiationDate: '2024-10-08',
+    initiationDate: '2024-09-05',
     status: 'On Hold',
-    progress: 15,
-    dueDate: '2024-11-18',
-    tickets: 12
+    progress: 45,
+    dueDate: '2024-11-10',
+    projectedGoLiveDate: '2025-01-30',
+    tickets: 8
   },
   {
     id: '6',
     name: 'Pacific Northwest Bank',
-    initiationDate: '2024-10-15',
+    initiationDate: '2024-10-10',
     status: 'In Progress',
-    progress: 55,
-    dueDate: '2024-12-01',
-    tickets: 2
+    progress: 30,
+    dueDate: '2024-11-28',
+    projectedGoLiveDate: '2024-12-19',
+    tickets: 1
   },
   {
     id: '7',
     name: 'Sunrise Credit Union',
-    initiationDate: '2024-10-03',
+    initiationDate: '2024-09-20',
     status: 'In Progress',
-    progress: 78,
-    dueDate: '2024-11-12',
+    progress: 85,
+    dueDate: '2024-11-05',
+    projectedGoLiveDate: '2024-11-25',
     tickets: 1
   },
   {
     id: '8',
     name: 'Valley Trust Bank',
-    initiationDate: '2024-10-18',
+    initiationDate: '2024-10-22',
     status: 'Not Started',
-    progress: 0,
+    progress: 5,
     dueDate: '2024-12-05',
+    projectedGoLiveDate: '2025-02-15',
     tickets: 0
   },
   {
     id: '9',
     name: 'Riverside Financial Group',
-    initiationDate: '2024-09-25',
+    initiationDate: '2024-08-15',
     status: 'Completed',
     progress: 100,
-    dueDate: '2024-11-08',
+    dueDate: '2024-10-10',
+    projectedGoLiveDate: '2024-10-28',
     tickets: 0
   },
   {
     id: '10',
     name: 'Mountain View Community Bank',
-    initiationDate: '2024-10-10',
+    initiationDate: '2024-09-25',
     status: 'In Progress',
-    progress: 38,
-    dueDate: '2024-11-22',
-    tickets: 6
+    progress: 50,
+    dueDate: '2024-11-15',
+    projectedGoLiveDate: '2024-12-30',
+    tickets: 4
   },
   {
     id: '11',
     name: 'Lakeside Banking Corporation',
-    initiationDate: '2024-10-20',
+    initiationDate: '2024-10-25',
     status: 'Not Started',
-    progress: 0,
+    progress: 8,
     dueDate: '2024-12-10',
+    projectedGoLiveDate: '2025-02-20',
     tickets: 0
   },
   {
     id: '12',
     name: 'Central City Credit Union',
-    initiationDate: '2024-10-07',
+    initiationDate: '2024-09-10',
     status: 'In Progress',
-    progress: 82,
-    dueDate: '2024-11-17',
-    tickets: 2
+    progress: 90,
+    dueDate: '2024-11-08',
+    projectedGoLiveDate: '2024-11-22',
+    tickets: 1
   },
   {
     id: '13',
     name: 'Gateway Financial Services',
-    initiationDate: '2024-09-30',
+    initiationDate: '2024-08-10',
     status: 'Completed',
     progress: 100,
-    dueDate: '2024-11-05',
+    dueDate: '2024-10-05',
+    projectedGoLiveDate: '2024-10-20',
     tickets: 0
   },
   {
     id: '14',
     name: 'Evergreen Savings Bank',
-    initiationDate: '2024-10-14',
+    initiationDate: '2024-10-05',
     status: 'In Progress',
-    progress: 45,
-    dueDate: '2024-11-28',
-    tickets: 4
+    progress: 40,
+    dueDate: '2024-11-22',
+    projectedGoLiveDate: '2025-01-10',
+    tickets: 3
   },
   {
     id: '15',
     name: 'Summit Trust Company',
-    initiationDate: '2024-10-22',
+    initiationDate: '2024-10-28',
     status: 'Not Started',
-    progress: 0,
-    dueDate: '2024-12-12',
-    tickets: 1
+    progress: 2,
+    dueDate: '2024-12-15',
+    projectedGoLiveDate: '2025-03-01',
+    tickets: 0
   }
 ];
 
@@ -159,37 +191,38 @@ interface Notification {
   title: string;
   message: string;
   timestamp: string;
-  tenantName: string;
+  clientName: string;
   read: boolean;
 }
 
-export default function CXPortalPage() {
+export default function CSPortalPage() {
   const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newTenantData, setNewTenantData] = useState({
+  const [newClientData, setNewClientData] = useState({
     orgName: '',
     contactName: '',
-    contactEmail: ''
+    contactEmail: '',
+    projectedGoLiveDate: ''
   });
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([
-    { id: '1', type: 'ticket', title: 'New Ticket', message: 'Union Bank created ticket TKT-001', timestamp: '2024-10-28T10:30:00', tenantName: 'Union Bank', read: false },
-    { id: '2', type: 'completion', title: 'Module Completed', message: 'Coastal Community Bank completed Organization Setup', timestamp: '2024-10-28T09:00:00', tenantName: 'Coastal Community Bank', read: false },
-    { id: '3', type: 'progress', title: 'Progress Update', message: 'Metro Financial Services reached 50% completion', timestamp: '2024-10-27T15:30:00', tenantName: 'Metro Financial', read: true },
+    { id: '1', type: 'ticket', title: 'New Ticket', message: 'Union Bank created ticket TKT-001', timestamp: '2024-10-28T10:30:00', clientName: 'Union Bank', read: false },
+    { id: '2', type: 'completion', title: 'Module Completed', message: 'Coastal Community Bank completed Organization Setup', timestamp: '2024-10-28T09:00:00', clientName: 'Coastal Community Bank', read: false },
+    { id: '3', type: 'progress', title: 'Progress Update', message: 'Metro Financial Services reached 50% completion', timestamp: '2024-10-27T15:30:00', clientName: 'Metro Financial', read: true },
   ]);
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const itemsPerPage = 10;
 
   // Calculate pagination
-  const totalPages = Math.ceil(SAMPLE_TENANTS.length / itemsPerPage);
+  const totalPages = Math.ceil(SAMPLE_CLIENTS.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentTenants = SAMPLE_TENANTS.slice(startIndex, endIndex);
+  const currentClients = SAMPLE_CLIENTS.slice(startIndex, endIndex);
 
-  const getStatusColor = (status: Tenant['status']) => {
+  const getStatusColor = (status: Client['status']) => {
     switch (status) {
       case 'Completed':
         return 'bg-green-100 text-green-800 border-green-200';
@@ -208,22 +241,22 @@ export default function CXPortalPage() {
     router.push('/');
   };
 
-  const handleAddTenant = (e: React.FormEvent) => {
+  const handleAddClient = (e: React.FormEvent) => {
     e.preventDefault();
     // Close modal
     setIsAddModalOpen(false);
     // Show snackbar
-    setSnackbarMessage(`Onboarding email sent to ${newTenantData.contactName} at ${newTenantData.contactEmail}`);
+    setSnackbarMessage(`Onboarding email sent to ${newClientData.contactName} at ${newClientData.contactEmail}`);
     setShowSnackbar(true);
     // Navigate to the new org onboarding page with the org name
     setTimeout(() => {
-      router.push(`/cx-portal/tenant-onboarding?org=${encodeURIComponent(newTenantData.orgName)}&contact=${encodeURIComponent(newTenantData.contactName)}&email=${encodeURIComponent(newTenantData.contactEmail)}`);
+      router.push(`/cs-portal/client-onboarding?org=${encodeURIComponent(newClientData.orgName)}&contact=${encodeURIComponent(newClientData.contactName)}&email=${encodeURIComponent(newClientData.contactEmail)}&goLiveDate=${encodeURIComponent(newClientData.projectedGoLiveDate)}`);
     }, 1500);
   };
 
   const handleCloseModal = () => {
     setIsAddModalOpen(false);
-    setNewTenantData({ orgName: '', contactName: '', contactEmail: '' });
+    setNewClientData({ orgName: '', contactName: '', contactEmail: '', projectedGoLiveDate: '' });
   };
 
   const markAllAsRead = () => {
@@ -282,7 +315,7 @@ export default function CXPortalPage() {
                   </div>
                   <div className="hidden md:block text-left">
                     <p className="text-sm font-semibold text-slate-900">Samuel Kite</p>
-                    <p className="text-xs text-slate-500">CX Agent</p>
+                    <p className="text-xs text-slate-500">CS Agent</p>
                   </div>
                   <svg 
                     className={`w-4 h-4 text-slate-600 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} 
@@ -363,10 +396,10 @@ export default function CXPortalPage() {
         <div className="mb-8 flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
-              Tenant Onboarding List
+              Client Onboarding List
             </h1>
             <p className="text-slate-600">
-              Manage and monitor the onboarding progress of all your clients. Track status, review tickets, and access detailed tenant information.
+              Manage and monitor the onboarding progress of all your clients. Track status, review tickets, and access detailed client information.
             </p>
           </div>
           <button
@@ -376,7 +409,7 @@ export default function CXPortalPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <span>Add New Tenant</span>
+            <span>Add New Client</span>
           </button>
         </div>
 
@@ -387,7 +420,7 @@ export default function CXPortalPage() {
               <thead className="bg-slate-50">
                 <tr>
                   <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Tenant Name
+                    Client Name
                   </th>
                   <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Initiation Date
@@ -399,7 +432,10 @@ export default function CXPortalPage() {
                     Progress
                   </th>
                   <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Due Date
+                    Go-Live Date
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Tracking Status
                   </th>
                   <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Tickets
@@ -410,16 +446,16 @@ export default function CXPortalPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
-                {currentTenants.map((tenant) => (
-                  <tr key={tenant.id} className="hover:bg-slate-50 transition-colors">
+                {currentClients.map((client) => (
+                  <tr key={client.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-slate-900">
-                        {tenant.name}
+                        {client.name}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-slate-600">
-                        {new Date(tenant.initiationDate).toLocaleDateString('en-US', {
+                        {new Date(client.initiationDate).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric'
@@ -427,8 +463,8 @@ export default function CXPortalPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(tenant.status)}`}>
-                        {tenant.status}
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(client.status)}`}>
+                        {client.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -437,18 +473,18 @@ export default function CXPortalPage() {
                           <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                             <div
                               className="bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] h-2 rounded-full transition-all"
-                              style={{ width: `${tenant.progress}%` } as React.CSSProperties}
+                              style={{ width: `${client.progress}%` } as React.CSSProperties}
                             />
                           </div>
                         </div>
                         <span className="text-sm font-medium text-slate-700 min-w-[40px]">
-                          {tenant.progress}%
+                          {client.progress}%
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-slate-600">
-                        {new Date(tenant.dueDate).toLocaleDateString('en-US', {
+                        {new Date(client.projectedGoLiveDate).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric'
@@ -456,11 +492,31 @@ export default function CXPortalPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      {client.status === 'Completed' ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-slate-50 text-slate-500 border-slate-200">
+                          N/A
+                        </span>
+                      ) : (() => {
+                        const heat = getStatusHeat(client.progress, client.initiationDate, client.projectedGoLiveDate);
+                        return (
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                            heat === 'hot' 
+                              ? 'bg-red-50 text-red-700 border-red-200'
+                              : heat === 'warm'
+                              ? 'bg-orange-50 text-orange-700 border-orange-200'
+                              : 'bg-green-50 text-green-700 border-green-200'
+                          }`}>
+                            {heat === 'hot' ? '🔴 Behind' : heat === 'warm' ? '🟡 At Risk' : '🟢 On Track'}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-slate-900">
-                          {tenant.tickets}
+                          {client.tickets}
                         </span>
-                        {tenant.tickets > 0 && (
+                        {client.tickets > 0 && (
                           <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                           </svg>
@@ -469,9 +525,9 @@ export default function CXPortalPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
-                        onClick={() => router.push(`/cx-portal/edit-tenant?tenant=${encodeURIComponent(tenant.name)}`)}
+                        onClick={() => router.push(`/cs-portal/edit-client?client=${encodeURIComponent(client.name)}`)}
                         className="text-[#9F2E2B] hover:text-[#7D2522] transition-colors"
-                        aria-label={`View ${tenant.name}`}
+                        aria-label={`View ${client.name}`}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -490,8 +546,8 @@ export default function CXPortalPage() {
             <div className="flex items-center justify-between">
               <div className="text-sm text-slate-600">
                 Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-                <span className="font-medium">{Math.min(endIndex, SAMPLE_TENANTS.length)}</span> of{' '}
-                <span className="font-medium">{SAMPLE_TENANTS.length}</span> tenants
+                <span className="font-medium">{Math.min(endIndex, SAMPLE_CLIENTS.length)}</span> of{' '}
+                <span className="font-medium">{SAMPLE_CLIENTS.length}</span> clients
               </div>
               
               <div className="flex items-center gap-2">
@@ -532,13 +588,13 @@ export default function CXPortalPage() {
         </div>
       </main>
 
-      {/* Add New Tenant Modal */}
+      {/* Add New Client Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
             {/* Modal Header */}
             <div className="border-b border-slate-200 p-6 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">Add New Tenant</h2>
+              <h2 className="text-xl font-bold text-slate-900">Add New Client</h2>
               <button
                 onClick={handleCloseModal}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -551,7 +607,7 @@ export default function CXPortalPage() {
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleAddTenant} className="p-6 space-y-5">
+            <form onSubmit={handleAddClient} className="p-6 space-y-5">
               {/* Organization Name */}
               <div>
                 <label htmlFor="org-name" className="block text-sm font-semibold text-slate-700 mb-2">
@@ -561,8 +617,8 @@ export default function CXPortalPage() {
                   id="org-name"
                   type="text"
                   required
-                  value={newTenantData.orgName}
-                  onChange={(e) => setNewTenantData({ ...newTenantData, orgName: e.target.value })}
+                  value={newClientData.orgName}
+                  onChange={(e) => setNewClientData({ ...newClientData, orgName: e.target.value })}
                   placeholder="e.g., Union Bank"
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] focus:border-transparent text-sm"
                 />
@@ -581,8 +637,8 @@ export default function CXPortalPage() {
                     id="contact-name"
                     type="text"
                     required
-                    value={newTenantData.contactName}
-                    onChange={(e) => setNewTenantData({ ...newTenantData, contactName: e.target.value })}
+                    value={newClientData.contactName}
+                    onChange={(e) => setNewClientData({ ...newClientData, contactName: e.target.value })}
                     placeholder="e.g., John Smith"
                     className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] focus:border-transparent text-sm"
                   />
@@ -597,11 +653,34 @@ export default function CXPortalPage() {
                     id="contact-email"
                     type="email"
                     required
-                    value={newTenantData.contactEmail}
-                    onChange={(e) => setNewTenantData({ ...newTenantData, contactEmail: e.target.value })}
+                    value={newClientData.contactEmail}
+                    onChange={(e) => setNewClientData({ ...newClientData, contactEmail: e.target.value })}
                     placeholder="e.g., john.smith@unionbank.com"
                     className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] focus:border-transparent text-sm"
                   />
+                </div>
+              </div>
+
+              {/* Projected Go-Live Date */}
+              <div className="pt-4 border-t border-slate-200">
+                <h3 className="text-sm font-semibold text-slate-700 mb-4">Timeline</h3>
+                
+                <div>
+                  <label htmlFor="go-live-date" className="block text-sm font-medium text-slate-700 mb-2">
+                    Projected Go-Live Date <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="go-live-date"
+                    type="date"
+                    required
+                    value={newClientData.projectedGoLiveDate}
+                    onChange={(e) => setNewClientData({ ...newClientData, projectedGoLiveDate: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] focus:border-transparent text-sm"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    This date will be visible to the client throughout their onboarding process
+                  </p>
                 </div>
               </div>
 
@@ -618,7 +697,7 @@ export default function CXPortalPage() {
                   type="submit"
                   className="px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md hover:shadow-lg"
                 >
-                  Add Tenant
+                  Add Client
                 </button>
               </div>
             </form>
