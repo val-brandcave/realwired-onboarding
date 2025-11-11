@@ -72,7 +72,7 @@ const MODULES: Module[] = [
     steps: [
       { id: 'vendor-types', label: 'Vendor Types & Credentials', path: 'vendor-types' },
       { id: 'vendor-classifications', label: 'Classifications', path: 'vendor-classifications' },
-      { id: 'vendor-geography', label: 'Geography', path: 'vendor-geography' },
+      { id: 'vendor-geography', label: 'Search Criteria', path: 'vendor-geography' },
       { id: 'vendor-upload', label: 'Upload Template', path: 'vendor-upload' },
     ]
   },

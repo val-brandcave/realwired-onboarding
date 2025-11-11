@@ -2217,11 +2217,19 @@ function EditClientContent() {
                   
                   {/* Section 1: Search Field 1 */}
                   <div className="bg-white border border-slate-300 rounded-lg p-5">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Search Field 1</h3>
-                    <p className="text-sm text-slate-600 mb-4">
-                      First custom search criterion (e.g., Region, Complexity Level, etc.)
-                    </p>
+                    <div className="mb-4 pb-4 border-b border-slate-200">
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Field 1 Label <span className="text-slate-500">(editable)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value="Region"
+                        placeholder="e.g., Region, Complexity, etc."
+                        className="w-full max-w-md px-3 py-2 text-sm font-medium border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B]"
+                      />
+                    </div>
                     
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Field Values</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {vendorRegions.map((region, index) => (
                         <div key={index} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
@@ -2238,7 +2246,7 @@ function EditClientContent() {
                           <button
                             onClick={() => setVendorRegions(vendorRegions.filter((_, i) => i !== index))}
                             className="text-red-600 hover:text-red-800 ml-2"
-                            aria-label="Delete region"
+                            aria-label="Delete value"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2249,20 +2257,28 @@ function EditClientContent() {
                     </div>
                     
                     <button
-                      onClick={() => setVendorRegions([...vendorRegions, 'New Region'])}
+                      onClick={() => setVendorRegions([...vendorRegions, 'New Value'])}
                       className="mt-3 px-4 py-2 text-sm font-medium text-[#9F2E2B] bg-white border border-[#9F2E2B] hover:bg-[#9F2E2B] hover:text-white rounded-lg transition-colors"
                     >
-                      + Add Region
+                      + Add New
                     </button>
                   </div>
                   
                   {/* Section 2: Search Field 2 */}
                   <div className="bg-white border border-slate-300 rounded-lg p-5">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Search Field 2</h3>
-                    <p className="text-sm text-slate-600 mb-4">
-                      Second custom search criterion (e.g., Sub-Region, Grade Level, etc.)
-                    </p>
+                    <div className="mb-4 pb-4 border-b border-slate-200">
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Field 2 Label <span className="text-slate-500">(editable)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value="Sub-Region"
+                        placeholder="e.g., Sub-Region, Grade Level, etc."
+                        className="w-full max-w-md px-3 py-2 text-sm font-medium border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B]"
+                      />
+                    </div>
                     
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Field Values</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {vendorSubRegions.map((subRegion, index) => (
                         <div key={index} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
@@ -2279,7 +2295,7 @@ function EditClientContent() {
                           <button
                             onClick={() => setVendorSubRegions(vendorSubRegions.filter((_, i) => i !== index))}
                             className="text-red-600 hover:text-red-800 ml-2"
-                            aria-label="Delete sub-region"
+                            aria-label="Delete value"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2290,10 +2306,10 @@ function EditClientContent() {
                     </div>
                     
                     <button
-                      onClick={() => setVendorSubRegions([...vendorSubRegions, 'New Sub-Region'])}
+                      onClick={() => setVendorSubRegions([...vendorSubRegions, 'New Value'])}
                       className="mt-3 px-4 py-2 text-sm font-medium text-[#9F2E2B] bg-white border border-[#9F2E2B] hover:bg-[#9F2E2B] hover:text-white rounded-lg transition-colors"
                     >
-                      + Add Sub-Region
+                      + Add New
                     </button>
                   </div>
                 </div>
