@@ -412,7 +412,10 @@ function EditClientContent() {
     'MAI', 'MRICS', 'SRA', 'AI-GRS', 'AI-RRS'
   ]);
 
-  // Vendor Regions & Sub-Regions
+  // Vendor Search Criteria - Field Labels and Values
+  const [field1Label, setField1Label] = useState('Region');
+  const [field2Label, setField2Label] = useState('Sub-Region');
+  
   const [vendorRegions, setVendorRegions] = useState<string[]>([
     'Northeast', 'Southeast', 'Midwest', 'Southwest', 'West'
   ]);
@@ -2223,7 +2226,8 @@ function EditClientContent() {
                       </label>
                       <input
                         type="text"
-                        value="Region"
+                        value={field1Label}
+                        onChange={(e) => setField1Label(e.target.value)}
                         placeholder="e.g., Region, Complexity, etc."
                         className="w-full max-w-md px-3 py-2 text-sm font-medium border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B]"
                       />
@@ -2272,7 +2276,8 @@ function EditClientContent() {
                       </label>
                       <input
                         type="text"
-                        value="Sub-Region"
+                        value={field2Label}
+                        onChange={(e) => setField2Label(e.target.value)}
                         placeholder="e.g., Sub-Region, Grade Level, etc."
                         className="w-full max-w-md px-3 py-2 text-sm font-medium border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B]"
                       />
