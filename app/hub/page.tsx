@@ -685,25 +685,25 @@ export default function HubPage() {
                         const configuredSections = [];
                         // Check for configured sections in this module
                         if (module.id === 'organization-setup') {
-                          const orgStatus = getSectionConfigStatus('organization-setup', 'org-info');
-                          const brandingStatus = getSectionConfigStatus('organization-setup', 'branding');
-                          const itStatus = getSectionConfigStatus('organization-setup', 'it-config');
+                          const orgStatus = getSectionConfigStatus('organization-setup-org-info');
+                          const brandingStatus = getSectionConfigStatus('organization-setup-branding');
+                          const itStatus = getSectionConfigStatus('organization-setup-it-config');
                           if (orgStatus.isConfigured) configuredSections.push({ name: 'Org Info', status: orgStatus });
                           if (brandingStatus.isConfigured) configuredSections.push({ name: 'Branding', status: brandingStatus });
                           if (itStatus.isConfigured) configuredSections.push({ name: 'IT Config', status: itStatus });
                         }
                         if (module.id === 'definitions') {
-                          const propStatus = getSectionConfigStatus('definitions', 'property-categories');
-                          const reqStatus = getSectionConfigStatus('definitions', 'request-types');
+                          const propStatus = getSectionConfigStatus('definitions-property-categories');
+                          const reqStatus = getSectionConfigStatus('definitions-request-types');
                           if (propStatus.isConfigured) configuredSections.push({ name: 'Properties', status: propStatus });
                           if (reqStatus.isConfigured) configuredSections.push({ name: 'Requests', status: reqStatus });
                         }
                         if (module.id === 'vendors') {
-                          const vendorStatus = getSectionConfigStatus('vendors', 'vendor-types');
+                          const vendorStatus = getSectionConfigStatus('vendors-vendor-types');
                           if (vendorStatus.isConfigured) configuredSections.push({ name: 'Vendor Setup', status: vendorStatus });
                         }
                         if (module.id === 'routing') {
-                          const routingStatus = getSectionConfigStatus('routing', 'request-type-routing');
+                          const routingStatus = getSectionConfigStatus('routing-request-type-routing');
                           if (routingStatus.isConfigured) configuredSections.push({ name: 'Routing Rules', status: routingStatus });
                         }
 

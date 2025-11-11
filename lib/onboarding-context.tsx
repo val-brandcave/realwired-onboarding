@@ -124,7 +124,7 @@ export interface RequestFormField {
 export interface PropertyCategory {
   id: string;
   name: string;
-  type: 'Residential' | 'Commercial' | 'Environmental' | 'Agricultural' | 'Other';
+  type: 'Residential' | 'Commercial' | 'Environmental' | 'Agricultural' | 'Mixed' | 'Land' | 'Other';
   propertyTypes: string[]; // List of property types under this category
 }
 
