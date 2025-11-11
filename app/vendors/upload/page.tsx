@@ -63,7 +63,7 @@ export default function VendorsPage() {
   const steps = [
     { id: '1', label: 'Types', status: 'completed' as const },
     { id: '2', label: 'Classifications', status: 'completed' as const },
-    { id: '3', label: 'Geography', status: 'completed' as const },
+    { id: '3', label: 'Search Criteria', status: 'completed' as const },
     { id: '4', label: 'Upload', status: 'in_progress' as const },
   ];
 
@@ -303,7 +303,7 @@ export default function VendorsPage() {
                 <ul className="space-y-1 text-xs text-muted-foreground">
                   <li>• Vendor contact information</li>
                   <li>• License numbers & expiration</li>
-                  <li>• Coverage areas (states/regions)</li>
+                  <li>• Coverage areas and search criteria</li>
                   <li>• Specialties & certifications</li>
                 </ul>
               </div>

@@ -308,7 +308,7 @@ export default function HubPage() {
       id: 'vendors',
       moduleNumber: 4,
       title: 'Vendors Setup',
-      description: 'Configure vendor types, credentials, classifications, geography, then upload template for CS team setup',
+      description: 'Configure vendor types, credentials, classifications, search criteria, then upload template for CS team setup',
       completed: state.moduleStatuses['vendors'] === 'completed',
       path: '/vendors-intro',
       duration: '8 min',

@@ -161,7 +161,7 @@ const MODULES: Module[] = [
     steps: [
       { id: 'vendor-types', label: 'Vendor Types & Credentials', path: 'vendor-types' },
       { id: 'vendor-classifications', label: 'Classifications', path: 'vendor-classifications' },
-      { id: 'vendor-geography', label: 'Geography', path: 'vendor-geography' },
+      { id: 'vendor-geography', label: 'Search Criteria', path: 'vendor-geography' },
       { id: 'vendor-upload', label: 'Vendor List Template', path: 'vendor-upload' },
     ]
   },
@@ -2202,24 +2202,24 @@ function EditClientContent() {
                 </div>
               )}
 
-                  {/* Tab 3: Geography (Regions & Sub-Regions) */}
+                  {/* Tab 3: Additional Search Criteria */}
                   {selectedModuleId === 'vendors' && selectedStepId === 'vendor-geography' && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-slate-900">Vendor Geography</h2>
+                    <h2 className="text-xl font-bold text-slate-900">Additional Search Criteria</h2>
                     <ConfiguredBadge
                       status={getSectionConfigStatus('vendors-geography')}
                       onMarkAsConfigured={() => markSectionConfigured('vendors-geography', currentAgent)}
                       onReconfigure={() => markSectionConfigured('vendors-geography', currentAgent)}
-                      sectionName="Vendor Geography"
+                      sectionName="Additional Search Criteria"
                     />
                   </div>
                   
-                  {/* Section 1: Vendor Regions */}
+                  {/* Section 1: Search Field 1 */}
                   <div className="bg-white border border-slate-300 rounded-lg p-5">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Vendor Regions</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Search Field 1</h3>
                     <p className="text-sm text-slate-600 mb-4">
-                      Define geographic regions for vendor organization.
+                      First custom search criterion (e.g., Region, Complexity Level, etc.)
                     </p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -2256,11 +2256,11 @@ function EditClientContent() {
                     </button>
                   </div>
                   
-                  {/* Section 2: Vendor Sub-Regions */}
+                  {/* Section 2: Search Field 2 */}
                   <div className="bg-white border border-slate-300 rounded-lg p-5">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Vendor Sub-Regions</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Search Field 2</h3>
                     <p className="text-sm text-slate-600 mb-4">
-                      Define sub-regions for more granular geographic organization.
+                      Second custom search criterion (e.g., Sub-Region, Grade Level, etc.)
                     </p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
