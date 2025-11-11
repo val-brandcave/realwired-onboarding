@@ -131,6 +131,11 @@ function ClientOnboardingContent() {
   const orgName = searchParams.get('org') || 'New Organization';
   const contactName = searchParams.get('contact') || '';
   const contactEmail = searchParams.get('email') || '';
+  const projectedGoLiveDate = searchParams.get('goLiveDate') || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  // Go-Live Date Edit Modal
+  const [showDateEditModal, setShowDateEditModal] = useState(false);
+  const [tempGoLiveDate, setTempGoLiveDate] = useState(projectedGoLiveDate);
 
   const unreadCount = 0; // New client, no notifications yet
 
@@ -316,6 +321,35 @@ function ClientOnboardingContent() {
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto p-6 lg:p-8">
+            {/* Projected Go-Live Date Banner */}
+            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Projected Go-Live Date</div>
+                    <div className="text-base font-bold text-slate-900">
+                      {new Date(projectedGoLiveDate).toLocaleDateString('en-US', { 
+                        month: 'long', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowDateEditModal(true)}
+                  className="px-3 py-1.5 text-sm font-medium text-blue-700 hover:text-blue-900 bg-white border-2 border-blue-300 hover:border-blue-400 rounded-lg transition-colors"
+                >
+                  Edit Date
+                </button>
+              </div>
+            </div>
+
             {/* Organization Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-slate-900 mb-2">{orgName}</h1>
@@ -426,6 +460,74 @@ function ClientOnboardingContent() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Go-Live Date Edit Modal */}
+      {showDateEditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="border-b border-slate-200 p-5 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Edit Projected Go-Live Date</h2>
+              <button
+                onClick={() => setShowDateEditModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Close modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label htmlFor="edit-go-live-date" className="block text-sm font-semibold text-slate-700 mb-2">
+                  Projected Go-Live Date <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id="edit-go-live-date"
+                  type="date"
+                  value={tempGoLiveDate}
+                  onChange={(e) => setTempGoLiveDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] focus:border-transparent text-sm"
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  This date will be visible to the client throughout their onboarding process
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-xs text-blue-900">
+                    Adjusting this date will update the timeline shown to {orgName} and affect their tracking status.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+                <button
+                  onClick={() => setShowDateEditModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDateEditModal(false);
+                    alert(`Go-Live date updated to ${new Date(tempGoLiveDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. This will be reflected across the client list and client hub.`);
+                  }}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md"
+                >
+                  Update Date
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
