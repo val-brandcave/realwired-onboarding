@@ -404,12 +404,9 @@ function ClientOnboardingContent() {
                 <p className="text-slate-600 mb-6">
                   The client needs to fill out this section. You&apos;ll be able to review and assist once they provide their information.
                 </p>
-                <div className="flex items-center justify-center gap-3">
-                  <button className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+                <div className="flex items-center justify-center">
+                  <button className="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md hover:shadow-lg">
                     Send Reminder
-                  </button>
-                  <button className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md hover:shadow-lg">
-                    Fill Out for Client
                   </button>
                 </div>
               </div>
@@ -424,7 +421,7 @@ function ClientOnboardingContent() {
                 <div className="flex-1">
                 <h4 className="text-sm font-semibold text-blue-900 mb-1">CS Agent Tip</h4>
                 <p className="text-sm text-blue-800">
-                  You can navigate between modules using the left sidebar. Each tab represents a step the client needs to complete. Use &quot;Send Reminder&quot; to prompt the client or &quot;Fill Out for Client&quot; to enter information on their behalf during a call.
+                  You can navigate between modules using the left sidebar. Each tab represents a step the client needs to complete. Use &quot;Send Reminder&quot; to prompt the client to fill out their information.
                 </p>
                 </div>
               </div>
