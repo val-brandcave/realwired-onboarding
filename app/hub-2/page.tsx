@@ -132,13 +132,13 @@ export default function HubPageV2() {
 
   // Calculate module progress
   const getModuleProgress = (moduleId: string) => {
-    const progress = state.moduleProgress[moduleId];
+    const progress = state.moduleProgress[moduleId as keyof typeof state.moduleProgress];
     if (!progress) return 0;
     return Math.round((progress.currentStep / progress.totalSteps) * 100);
   };
 
   const getProgressDetails = (moduleId: string) => {
-    const progress = state.moduleProgress[moduleId];
+    const progress = state.moduleProgress[moduleId as keyof typeof state.moduleProgress];
     if (!progress) return null;
     return {
       currentStep: progress.currentStep,
@@ -220,7 +220,7 @@ export default function HubPageV2() {
       moduleNumber: 4,
       title: 'Vendors Setup',
       description: 'Configure vendor types, credentials, classifications, search criteria, then upload template',
-      completed: state.moduleStatuses['vendors'] === 'completed',
+      completed: (state.moduleStatuses['vendors'] as string) === 'completed',
       path: '/vendors-intro',
       duration: '8 min',
       icon: (

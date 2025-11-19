@@ -42,7 +42,7 @@ export function CircularProgress({
   };
 
   const getUrgencyColor = () => {
-    if (daysRemaining === null) return '#10B981';
+    if (daysRemaining === null || daysRemaining === undefined) return '#10B981';
     if (daysRemaining < 0) return '#EF4444';
     if (daysRemaining <= 7) return '#F97316';
     return '#10B981';
@@ -103,7 +103,7 @@ export function CircularProgress({
             </>
           )}
           
-          {daysRemaining !== null && completedModules === undefined && (
+          {daysRemaining !== null && daysRemaining !== undefined && completedModules === undefined && (
             <div className={`text-sm font-semibold px-3 py-1 rounded-full ${
               daysRemaining < 0
                 ? 'bg-red-100 text-red-700'

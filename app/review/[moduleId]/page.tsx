@@ -270,9 +270,9 @@ export default function ModuleReviewPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-foreground">{type.name}</p>
-                        <p className="text-sm text-muted-foreground">{type.category}</p>
+                        <p className="text-sm text-muted-foreground">{type.description}</p>
                       </div>
-                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">{type.processType || '2-step'}</span>
+                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">{type.type || '2-step'}</span>
                     </div>
                   </div>
                 ))}
@@ -320,7 +320,7 @@ export default function ModuleReviewPage() {
                   <div key={user.id} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-semibold text-foreground">{user.firstName} {user.lastName}</p>
+                        <p className="font-semibold text-foreground">{user.name}</p>
                         <p className="text-sm text-muted-foreground">{user.email}</p>
                         <p className="text-xs text-slate-500 mt-1">Role: {user.role}</p>
                       </div>
@@ -342,7 +342,7 @@ export default function ModuleReviewPage() {
                 {state.users.lendingGroups.map((group) => (
                   <div key={group.id} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                     <p className="font-semibold text-foreground">{group.name}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{group.members.length} member(s)</p>
+                    <p className="text-sm text-muted-foreground mt-1">{group.type} • {group.regions.join(', ')}</p>
                   </div>
                 ))}
               </div>
@@ -373,8 +373,8 @@ export default function ModuleReviewPage() {
     } else if (moduleId === 'general-settings') {
       return (
         <div className="space-y-6">
-          <ReviewField label="Email Notifications" value={state.generalSettings.emailNotifications ? 'Enabled' : 'Disabled'} />
-          <ReviewField label="Auto-Assignment" value={state.generalSettings.autoAssignment ? 'Enabled' : 'Disabled'} />
+          <ReviewField label="Days Calculation" value={state.generalSettings.daysCalculation === 'business' ? 'Business Days' : 'Calendar Days'} />
+          <ReviewField label="Review Approval Required" value={state.generalSettings.reviewApprovalRequired ? 'Yes' : 'No'} />
         </div>
       );
     } else if (moduleId === 'it-checklist') {
