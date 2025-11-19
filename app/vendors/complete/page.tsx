@@ -31,7 +31,7 @@ export default function VendorsCompletePage() {
 
           {/* Description */}
           <p className="text-base text-slate-600 mb-6">
-            Your vendor network configuration has been submitted. Our CS team will review and configure all vendor details, licenses, and coverage areas.
+            Your vendor network configuration has been submitted. Our CS team will review and configure all vendor details, licenses, and coverage areas. You can always come back to review or update vendor information from your Hub.
           </p>
 
           {/* What's Next Section */}

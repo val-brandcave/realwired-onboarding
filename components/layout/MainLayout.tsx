@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { FloatingChatButton } from '@/components/ui/FloatingChatButton';
 import { UserProfileDropdown } from './UserProfileDropdown';
+import { usePathname } from 'next/navigation';
 
 interface Step {
   id: string;
@@ -15,6 +16,7 @@ interface MainLayoutProps {
   currentStep?: number;
   steps?: Step[];
   title?: string;
+  hideFloatingChat?: boolean;
 }
 
 interface Notification {
@@ -58,8 +60,10 @@ function ProgressBar({ steps }: { steps: Step[] }) {
 export function MainLayout({ 
   children, 
   steps = [],
-  title = "YouConnect Onboarding"
+  title = "YouConnect Onboarding",
+  hideFloatingChat = false
 }: MainLayoutProps) {
+  const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([
     {
@@ -202,8 +206,8 @@ export function MainLayout({
         </div>
       </footer>
 
-      {/* Floating Chat Button - Available on all pages */}
-      <FloatingChatButton />
+      {/* Floating Chat Button - Available on all pages (except hub-2 which has unified help center) */}
+      {!hideFloatingChat && pathname !== '/hub-2' && <FloatingChatButton />}
 
       {/* Notification Slide-out Panel */}
       {showNotifications && (

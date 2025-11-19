@@ -73,7 +73,7 @@ export default function UsersCompletePage() {
             </h1>
 
             <p className="text-sm text-muted-foreground mb-6">
-              Perfect! Your team members are all set up and ready to use YouConnect.
+              Perfect! Your team members are all set up and ready to use YouConnect. You can always come back to review or add more users from your Hub.
             </p>
 
             <button

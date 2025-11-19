@@ -81,7 +81,7 @@ export default function OrganizationSetupCompletePage() {
             </h1>
 
             <p className="text-sm text-muted-foreground mb-6">
-              Great job! Your organization profile is configured. Let's continue setting up your account.
+              Great job! Your organization profile is configured. You can always come back and edit this information from your Hub. Let's continue setting up your account.
             </p>
 
             <button

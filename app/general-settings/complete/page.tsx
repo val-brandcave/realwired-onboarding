@@ -73,7 +73,7 @@ export default function GeneralSettingsCompletePage() {
             </h1>
 
             <p className="text-sm text-muted-foreground mb-6">
-              Great job! Your workflow settings are configured. One more module to go!
+              Great job! Your workflow settings are configured. You can always come back to review or adjust these settings from your Hub. One more module to go!
             </p>
 
             <button

@@ -4,6 +4,8 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useOnboarding } from '@/lib/onboarding-context';
 import { ConfiguredBadge } from '@/components/ui/ConfiguredBadge';
+import { DonutChart } from '@/components/ui/DonutChart';
+import { SmallDonut } from '@/components/ui/SmallDonut';
 
 // Module structure (same as client-onboarding)
 interface ModuleStep {
@@ -500,6 +502,33 @@ function EditClientContent() {
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
 
+  // Sample module progress data for demo purposes (~65% overall)
+  const [sampleModuleProgress] = useState({
+    'organization-setup': { currentStep: 4, totalSteps: 4 }, // 100% - Completed (green donut)
+    'definitions': { currentStep: 4, totalSteps: 4 }, // 100% - Completed (green donut)
+    'users': { currentStep: 2, totalSteps: 2 }, // 100% - Completed (green donut)
+    'vendors': { currentStep: 3, totalSteps: 4 }, // 75% - Almost done (amber donut)
+    'routing': { currentStep: 2, totalSteps: 4 }, // 50% - Halfway (amber donut)
+    'general-settings': { currentStep: 1, totalSteps: 4 }, // 25% - Just started (orange donut)
+    'it-checklist': { currentStep: 0, totalSteps: 2 }, // 0% - Not started (gray donut)
+  });
+
+  // Module target completion dates
+  const [moduleCompletionDates, setModuleCompletionDates] = useState<Record<string, string>>({
+    'organization-setup': '2025-12-01',
+    'definitions': '2025-12-08',
+    'users': '2025-12-15',
+    'vendors': '2025-12-22',
+    'routing': '2025-12-29',
+    'general-settings': '2026-01-05',
+    'it-checklist': '2026-02-12',
+  });
+
+  // Modal state for setting module completion dates
+  const [showModuleDateModal, setShowModuleDateModal] = useState(false);
+  const [selectedModuleForDate, setSelectedModuleForDate] = useState<typeof MODULES[0] | null>(null);
+  const [tempModuleDate, setTempModuleDate] = useState('');
+
   const selectedModule = MODULES.find(m => m.id === selectedModuleId) || MODULES[0];
 
   const handleSignOut = () => {
@@ -556,6 +585,46 @@ function EditClientContent() {
     alert('Changes saved successfully!');
   };
 
+  const handleOpenDateModal = (module: typeof MODULES[0]) => {
+    setSelectedModuleForDate(module);
+    setTempModuleDate(moduleCompletionDates[module.id] || '');
+    setShowModuleDateModal(true);
+  };
+
+  const handleSaveModuleDate = () => {
+    if (selectedModuleForDate && tempModuleDate) {
+      setModuleCompletionDates(prev => ({
+        ...prev,
+        [selectedModuleForDate.id]: tempModuleDate
+      }));
+      setShowModuleDateModal(false);
+      setSelectedModuleForDate(null);
+      setTempModuleDate('');
+    }
+  };
+
+  const handleCloseModuleDateModal = () => {
+    setShowModuleDateModal(false);
+    setSelectedModuleForDate(null);
+    setTempModuleDate('');
+  };
+
+  // Helper function to format date for display
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'No date set';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Helper function to check if target date is at risk (too close to go-live)
+  const isDateAtRisk = (dateString: string) => {
+    if (!dateString) return false;
+    const targetDate = new Date(dateString);
+    const goLiveDate = new Date(projectedGoLiveDate);
+    const daysUntilGoLive = Math.floor((goLiveDate.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysUntilGoLive < 7; // At risk if less than 7 days before go-live
+  };
+
   const handleMarkAsResolved = (ticketId: string) => {
     setTickets(prev => prev.map(t => t.id === ticketId ? {...t, status: 'resolved'} : t));
     setOpenTicketMenuId(null);
@@ -571,6 +640,23 @@ function EditClientContent() {
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Helper function to calculate module progress
+  const getModuleProgress = (moduleId: string) => {
+    // Try to get progress from context first, then fallback to sample data
+    const progress = state.moduleProgress[moduleId] || sampleModuleProgress[moduleId as keyof typeof sampleModuleProgress];
+    if (!progress) return 0;
+    return Math.round((progress.currentStep / progress.totalSteps) * 100);
+  };
+
+  // Helper function to calculate overall progress
+  const getOverallProgress = () => {
+    const completedModules = MODULES.filter(module => {
+      const progress = getModuleProgress(module.id);
+      return progress === 100;
+    }).length;
+    return Math.round((completedModules / MODULES.length) * 100);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -662,27 +748,90 @@ function EditClientContent() {
         {/* Left Sidebar - Module Navigation */}
         <aside className="w-64 bg-white border-r border-slate-200 overflow-y-auto">
           <div className="p-4">
+            {/* Client Completion Status - Moved to Top */}
+            <div className="pb-4 mb-6 border-b border-slate-200">
+              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                Onboarding Progress
+              </h2>
+              <div className="flex justify-center">
+                <DonutChart 
+                  percentage={getOverallProgress()} 
+                  size={100} 
+                  strokeWidth={10}
+                  label="Complete"
+                />
+              </div>
+              <div className="mt-3 text-center">
+                <p className="text-xs text-slate-600">
+                  {MODULES.filter(m => getModuleProgress(m.id) === 100).length} of {MODULES.length} modules completed
+                </p>
+              </div>
+            </div>
+
             <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
               Onboarding Modules
             </h2>
             <nav className="space-y-1 mb-6">
               {MODULES.map((module) => (
-                <button
-                  key={module.id}
-                  onClick={() => {
-                    setSelectedModuleId(module.id);
-                    setSelectedStepId(module.steps[0].id);
-                    setShowTicketsView(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                    selectedModuleId === module.id && !showTicketsView
-                      ? 'bg-[#9F2E2B] text-white'
-                      : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  {module.icon}
-                  <span className="truncate">{module.title}</span>
-                </button>
+                <div key={module.id} className="group relative">
+                  <div className="flex items-stretch gap-1">
+                    <button
+                      onClick={() => {
+                        setSelectedModuleId(module.id);
+                        setSelectedStepId(module.steps[0].id);
+                        setShowTicketsView(false);
+                      }}
+                      className={`flex-1 flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                        selectedModuleId === module.id && !showTicketsView
+                          ? 'bg-[#9F2E2B] text-white'
+                          : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {module.icon}
+                      <span className="truncate flex-1 text-left">{module.title}</span>
+                      <div className="flex-shrink-0">
+                        <SmallDonut 
+                          percentage={getModuleProgress(module.id)} 
+                          size={28}
+                          strokeWidth={2}
+                          showLabel={false}
+                        />
+                      </div>
+                    </button>
+                    
+                    {/* Calendar icon for setting completion date */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleOpenDateModal(module);
+                      }}
+                      className={`px-2 py-2.5 rounded-lg transition-colors flex items-center justify-center ${
+                        selectedModuleId === module.id && !showTicketsView
+                          ? 'bg-[#9F2E2B] text-white hover:bg-[#8A2826]'
+                          : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'
+                      }`}
+                      title={`Set target date: ${formatDate(moduleCompletionDates[module.id])}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  {/* Target date indicator below button */}
+                  {moduleCompletionDates[module.id] && (
+                    <div className={`text-xs px-3 py-1 mt-1 rounded text-center ${
+                      isDateAtRisk(moduleCompletionDates[module.id])
+                        ? 'bg-red-50 text-red-700 border border-red-200'
+                        : 'bg-blue-50 text-blue-700 border border-blue-200'
+                    }`}>
+                      Target: {formatDate(moduleCompletionDates[module.id])}
+                      {isDateAtRisk(moduleCompletionDates[module.id]) && (
+                        <span className="ml-1">⚠️</span>
+                      )}
+                    </div>
+                  )}
+                </div>
               ))}
             </nav>
 
@@ -2969,6 +3118,119 @@ function EditClientContent() {
                   Update Date
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Module Completion Date Modal */}
+      {showModuleDateModal && selectedModuleForDate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  {selectedModuleForDate.icon}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Set Target Date</h3>
+                  <p className="text-xs text-slate-500">{selectedModuleForDate.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseModuleDateModal}
+                className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Info Card */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-800">
+                  <strong>Go-Live Date:</strong> {formatDate(projectedGoLiveDate)}
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  Set realistic target dates to ensure modules are completed before go-live.
+                </p>
+              </div>
+
+              {/* Current Date Display */}
+              {moduleCompletionDates[selectedModuleForDate.id] && (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                  <p className="text-xs font-medium text-slate-600 mb-1">Currently Set To:</p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {formatDate(moduleCompletionDates[selectedModuleForDate.id])}
+                  </p>
+                </div>
+              )}
+
+              {/* Date Input */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-slate-900">
+                  Target Completion Date
+                </label>
+                <input
+                  type="date"
+                  value={tempModuleDate}
+                  onChange={(e) => setTempModuleDate(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] focus:border-transparent text-slate-900"
+                />
+                <p className="text-xs text-slate-500">
+                  Select a date between today and the go-live date.
+                </p>
+              </div>
+
+              {/* Risk Indicator */}
+              {tempModuleDate && isDateAtRisk(tempModuleDate) && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
+                  <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <p className="text-xs font-semibold text-red-800">⚠️ At Risk</p>
+                    <p className="text-xs text-red-700">This date is very close to the go-live date. Consider moving it earlier.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Progress Context */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <p className="text-xs font-medium text-slate-600 mb-2">Module Progress</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-slate-200 rounded-full h-2">
+                    <div
+                      className="bg-[#9F2E2B] h-2 rounded-full transition-all"
+                      style={{ width: `${getModuleProgress(selectedModuleForDate.id)}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-slate-700 min-w-fit">
+                    {getModuleProgress(selectedModuleForDate.id)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between gap-3 p-6 border-t border-slate-200 bg-slate-50">
+              <button
+                onClick={handleCloseModuleDateModal}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveModuleDate}
+                disabled={!tempModuleDate}
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Set Target Date
+              </button>
             </div>
           </div>
         </div>

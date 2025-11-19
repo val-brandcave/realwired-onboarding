@@ -54,7 +54,7 @@ export default function ITChecklistComplete() {
 
         {/* Description */}
         <p className="text-slate-600 mb-8 leading-relaxed">
-          Great! Your IT setup is confirmed. Your team will be able to access YouConnect and receive email notifications without any technical issues.
+          Great! Your IT setup is confirmed. Your team will be able to access YouConnect and receive email notifications without any technical issues. You can always come back to review or update this checklist from your Hub.
         </p>
 
         {/* CTA Button */}

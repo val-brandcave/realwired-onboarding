@@ -4,6 +4,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useOnboarding, type OnboardingParticipant } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { InviteLink } from "./_components/InviteLink";
 
 // Predefined roles with colors
 const PREDEFINED_ROLES = [
@@ -364,7 +365,7 @@ export default function ParticipantsPage() {
                             {getInitials(participant.name)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap mb-2">
                               <div className="text-sm font-medium text-foreground">{participant.name}</div>
                               {participant.role && roleBadgeColors && (
                                 <span 
@@ -378,11 +379,16 @@ export default function ParticipantsPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-muted-foreground truncate">{participant.email}</div>
+                            <div className="text-xs text-muted-foreground truncate mb-2">{participant.email}</div>
+                            <InviteLink 
+                              participantId={participant.id}
+                              participantName={participant.name}
+                              participantEmail={participant.email}
+                            />
                           </div>
                           <button
                             onClick={() => handleRemoveParticipant(participant.id)}
-                            className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                            className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors self-start"
                             title="Remove participant"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

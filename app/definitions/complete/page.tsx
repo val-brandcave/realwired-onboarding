@@ -75,7 +75,7 @@ export default function DefinitionsCompletePage() {
             </h1>
 
             <p className="text-sm text-muted-foreground mb-6">
-              Excellent! Your property categories, fields, request types, and form fields are all configured.
+              Excellent! Your property categories, fields, request types, and form fields are all configured. You can review or update this configuration anytime from your Hub.
             </p>
 
             <button

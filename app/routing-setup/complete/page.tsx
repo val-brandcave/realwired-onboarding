@@ -73,7 +73,7 @@ export default function RoutingCompletePage() {
             </h1>
 
             <p className="text-sm text-muted-foreground mb-6">
-              Great! Your routing rules are configured and orders will be automatically assigned.
+              Great! Your routing rules are configured and orders will be automatically assigned. You can review or modify your routing configuration anytime from your Hub.
             </p>
 
             <button

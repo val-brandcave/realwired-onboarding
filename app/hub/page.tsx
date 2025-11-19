@@ -7,6 +7,7 @@ import { useState, useMemo } from "react";
 import { ParticipantSelector } from "./_components/ParticipantSelector";
 import { Snackbar } from "@/components/ui/Snackbar";
 import { ConfiguredBadge } from "@/components/ui/ConfiguredBadge";
+import { CSTeamDisplay } from "./_components/CSTeamDisplay";
 
 // Contact Modal Component
 function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -180,6 +181,24 @@ export default function HubPage() {
   const [showContactModal, setShowContactModal] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [showSnackbar, setShowSnackbar] = useState(false);
+
+  // Target completion dates set by CS agent (same as edit-client page)
+  const moduleTargetDates: Record<string, string> = {
+    'organization-setup': '2025-12-01',
+    'definitions': '2025-12-08',
+    'users': '2025-12-15',
+    'vendors': '2025-12-22',
+    'routing': '2025-12-29',
+    'general-settings': '2026-01-05',
+    'it-checklist': '2026-02-12',
+  };
+
+  // Helper function to format date
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   // Calculate days until go-live
   const getDaysUntilGoLive = () => {
@@ -367,15 +386,25 @@ export default function HubPage() {
   const nextModule = modules.find(m => !m.completed);
   const module1Completed = modules[0].completed;
   
-  // Determine status for each module
+  // Determine status for each module based on assignment
   const getModuleStatus = (module: typeof modules[0], index: number) => {
     if (module.completed) return 'completed';
-    // Module 1 is always ready
-    if (index === 0) return 'ready';
-    // All other modules are locked until module 1 is complete
-    if (!module1Completed) return 'locked';
-    // After module 1 is complete, all modules are unlocked
-    return 'ready';
+    
+    // Check if current user is assigned to this module
+    const currentUserId = 'primary-decision-maker'; // In real app, get from auth
+    const moduleAssignment = state.moduleAssignments.find(a => a.moduleId === module.id);
+    const isAssigned = moduleAssignment?.assignedParticipantIds.includes(currentUserId);
+    
+    // Module 1 is always ready for assigned users
+    if (index === 0 && isAssigned) return 'ready';
+    
+    // For other modules: if module 1 is not complete, show as unassigned (not locked)
+    // Users can see all modules but cannot start them if not assigned
+    if (!module1Completed) return 'unassigned';
+    
+    // After module 1 is complete, check assignment
+    if (isAssigned) return 'ready';
+    return 'unassigned';
   };
 
   return (
@@ -502,6 +531,18 @@ export default function HubPage() {
                   <span>Estimated time: <strong>{nextModule.duration}</strong></span>
                 </div>
 
+                {/* Target Date */}
+                {moduleTargetDates[nextModule.id] && (
+                  <div className="flex items-center gap-2 text-xs mb-3">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-100 text-blue-800 font-medium rounded-lg border border-blue-300">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Target: {formatDate(moduleTargetDates[nextModule.id])}
+                    </span>
+                  </div>
+                )}
+
                 {/* Participant Assignment for Next Module */}
                 {allParticipants.length > 0 && (
                   <div className="flex items-center gap-2 mb-4">
@@ -588,6 +629,9 @@ export default function HubPage() {
         {/* Contact Modal */}
         <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} />
 
+        {/* CS Team Display */}
+        <CSTeamDisplay />
+
         {/* All Modules - Accordion */}
         <div className="bg-card border border-border rounded-lg">
           {/* Accordion Header */}
@@ -618,7 +662,7 @@ export default function HubPage() {
             <div className="p-4 space-y-2.5">
               {modules.map((module, index) => {
                 const status = getModuleStatus(module, index);
-                const isLocked = status === 'locked';
+                const isUnassigned = status === 'unassigned';
 
                 return (
                   <div 
@@ -626,8 +670,8 @@ export default function HubPage() {
                     className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all ${
                       module.completed 
                         ? 'bg-primary/5 border-primary/30' 
-                        : isLocked
-                        ? 'bg-muted/20 border-border opacity-50'
+                        : isUnassigned
+                        ? 'bg-muted/20 border-border opacity-60'
                         : 'bg-card border-border hover:border-primary/30'
                     }`}
                   >
@@ -635,7 +679,7 @@ export default function HubPage() {
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                       module.completed 
                         ? 'bg-primary text-primary-foreground' 
-                        : isLocked
+                        : isUnassigned
                         ? 'bg-muted text-muted-foreground'
                         : 'bg-primary/10 text-primary'
                     }`}>
@@ -663,20 +707,29 @@ export default function HubPage() {
                             ? 'bg-green-100 text-green-700' 
                             : status === 'ready'
                             ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-500'
+                            : 'bg-amber-100 text-amber-700'
                         }`}>
                           {status === 'completed' ? '✓ Completed' : status === 'ready' ? 'Ready' : (
                             <>
                               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                               </svg>
-                              Locked
+                              Not Assigned
                             </>
                           )}
                         </span>
                         <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-xs font-medium rounded">
                           {module.duration}
                         </span>
+                        {/* Target Date Badge */}
+                        {moduleTargetDates[module.id] && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded border border-blue-300">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {formatDate(moduleTargetDates[module.id])}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground mb-2">{module.description}</p>
                       
@@ -785,21 +838,29 @@ export default function HubPage() {
                     {/* Action Button - More Prominent */}
                     <div className="flex-shrink-0">
                       {module.completed ? (
-                        <button
-                          onClick={() => handleModuleStart(module.path, module.id)}
-                          className="px-4 py-2 text-sm font-semibold text-secondary-foreground bg-white border-2 border-border rounded-lg hover:bg-accent hover:border-primary/30 transition-all shadow-sm hover:shadow"
-                        >
-                          Edit
-                        </button>
-                      ) : isLocked ? (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => router.push(`/review/${module.id}`)}
+                            className="px-4 py-2 text-sm font-medium text-muted-foreground bg-white border border-border rounded-lg hover:bg-accent hover:border-primary/30 transition-all"
+                          >
+                            Review
+                          </button>
+                          {status === 'ready' && (
+                            <button
+                              onClick={() => handleModuleStart(module.path, module.id)}
+                              className="px-4 py-2 text-sm font-semibold text-secondary-foreground bg-white border-2 border-border rounded-lg hover:bg-accent hover:border-primary/30 transition-all shadow-sm hover:shadow"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </div>
+                      ) : isUnassigned ? (
                         <button
                           disabled
-                          className="p-2 text-muted-foreground bg-muted rounded-lg cursor-not-allowed opacity-60"
-                          title="Module locked"
+                          className="px-4 py-2 text-sm font-medium text-muted-foreground bg-muted rounded-lg cursor-not-allowed opacity-60"
+                          title="You are not assigned to this module"
                         >
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                          </svg>
+                          Not Assigned
                         </button>
                       ) : (
                         <button
