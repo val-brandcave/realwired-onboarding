@@ -1016,6 +1016,51 @@ function EditClientContent() {
               </div>
             ) : (
               <>
+                {/* Module Header with Target Date */}
+                <div className="mb-6 bg-gradient-to-r from-slate-50 to-slate-100 border-2 border-slate-200 rounded-xl p-5">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#9F2E2B] rounded-xl flex items-center justify-center text-white shadow-md">
+                        {selectedModule.icon}
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-slate-900">{selectedModule.title}</h2>
+                        <p className="text-sm text-slate-600 mt-0.5">
+                          {getModuleProgress(selectedModule.id)}% Complete • {selectedModule.steps.length} Steps
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Target Date Display/Edit */}
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-1">Target Completion</p>
+                        <div className="flex items-center gap-2">
+                          {moduleCompletionDates[selectedModule.id] ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-800 text-sm font-semibold rounded-lg border border-blue-300">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              {formatDate(moduleCompletionDates[selectedModule.id])}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-slate-500 italic">No date set</span>
+                          )}
+                          <button
+                            onClick={() => handleOpenDateModal(selectedModule)}
+                            className="p-2 text-slate-600 hover:text-[#9F2E2B] hover:bg-white rounded-lg border border-slate-300 hover:border-[#9F2E2B] transition-colors"
+                            title="Set target date"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Module Steps Tabs */}
                 <div className="mb-6">
                   <div className="border-b border-slate-200">

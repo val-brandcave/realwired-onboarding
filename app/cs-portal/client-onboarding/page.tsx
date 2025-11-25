@@ -137,9 +137,56 @@ function ClientOnboardingContent() {
   const [showDateEditModal, setShowDateEditModal] = useState(false);
   const [tempGoLiveDate, setTempGoLiveDate] = useState(projectedGoLiveDate);
 
+  // Module target completion dates (same as edit-client)
+  const [moduleCompletionDates, setModuleCompletionDates] = useState<Record<string, string>>({
+    'organization-setup': '2025-12-01',
+    'definitions': '2025-12-08',
+    'users': '2025-12-15',
+    'vendors': '2025-12-22',
+    'routing': '2025-12-29',
+    'general-settings': '2026-01-05',
+    'it-checklist': '2026-02-12',
+  });
+
+  // Modal state for setting module completion dates
+  const [showModuleDateModal, setShowModuleDateModal] = useState(false);
+  const [selectedModuleForDate, setSelectedModuleForDate] = useState<typeof MODULES[0] | null>(null);
+  const [tempModuleDate, setTempModuleDate] = useState('');
+
   const unreadCount = 0; // New client, no notifications yet
 
   const selectedModule = MODULES.find(m => m.id === selectedModuleId) || MODULES[0];
+
+  // Helper functions
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'No date set';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const handleOpenDateModal = (module: typeof MODULES[0]) => {
+    setSelectedModuleForDate(module);
+    setTempModuleDate(moduleCompletionDates[module.id] || '');
+    setShowModuleDateModal(true);
+  };
+
+  const handleSaveModuleDate = () => {
+    if (selectedModuleForDate && tempModuleDate) {
+      setModuleCompletionDates(prev => ({
+        ...prev,
+        [selectedModuleForDate.id]: tempModuleDate
+      }));
+      setShowModuleDateModal(false);
+      setSelectedModuleForDate(null);
+      setTempModuleDate('');
+    }
+  };
+
+  const handleCloseModuleDateModal = () => {
+    setShowModuleDateModal(false);
+    setSelectedModuleForDate(null);
+    setTempModuleDate('');
+  };
 
   const handleSignOut = () => {
     router.push('/');
@@ -369,6 +416,51 @@ function ClientOnboardingContent() {
               </div>
             </div>
 
+            {/* Module Header with Target Date */}
+            <div className="mb-6 bg-gradient-to-r from-slate-50 to-slate-100 border-2 border-slate-200 rounded-xl p-5">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-[#9F2E2B] rounded-xl flex items-center justify-center text-white shadow-md">
+                    {selectedModule.icon}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">{selectedModule.title}</h2>
+                    <p className="text-sm text-slate-600 mt-0.5">
+                      {selectedModule.steps.length} Steps • Waiting for client
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Target Date Display/Edit */}
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide mb-1">Target Completion</p>
+                    <div className="flex items-center gap-2">
+                      {moduleCompletionDates[selectedModule.id] ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-800 text-sm font-semibold rounded-lg border border-blue-300">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {formatDate(moduleCompletionDates[selectedModule.id])}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-slate-500 italic">No date set</span>
+                      )}
+                      <button
+                        onClick={() => handleOpenDateModal(selectedModule)}
+                        className="p-2 text-slate-600 hover:text-[#9F2E2B] hover:bg-white rounded-lg border border-slate-300 hover:border-[#9F2E2B] transition-colors"
+                        title="Set target date"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Module Steps Tabs */}
             <div className="mb-6">
               <div className="border-b border-slate-200">
@@ -522,6 +614,90 @@ function ClientOnboardingContent() {
                   Update Date
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Module Completion Date Modal */}
+      {showModuleDateModal && selectedModuleForDate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  {selectedModuleForDate.icon}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Set Target Date</h3>
+                  <p className="text-xs text-slate-500">{selectedModuleForDate.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseModuleDateModal}
+                className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Info Card */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-800">
+                  <strong>Go-Live Date:</strong> {formatDate(projectedGoLiveDate)}
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  Set realistic target dates to ensure modules are completed before go-live.
+                </p>
+              </div>
+
+              {/* Current Date Display */}
+              {moduleCompletionDates[selectedModuleForDate.id] && (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                  <p className="text-xs font-medium text-slate-600 mb-1">Currently Set To:</p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {formatDate(moduleCompletionDates[selectedModuleForDate.id])}
+                  </p>
+                </div>
+              )}
+
+              {/* Date Input */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-slate-900">
+                  Target Completion Date
+                </label>
+                <input
+                  type="date"
+                  value={tempModuleDate}
+                  onChange={(e) => setTempModuleDate(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] focus:border-transparent text-slate-900"
+                />
+                <p className="text-xs text-slate-500">
+                  Select a date between today and the go-live date.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between gap-3 p-6 border-t border-slate-200 bg-slate-50">
+              <button
+                onClick={handleCloseModuleDateModal}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveModuleDate}
+                disabled={!tempModuleDate}
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Set Target Date
+              </button>
             </div>
           </div>
         </div>
