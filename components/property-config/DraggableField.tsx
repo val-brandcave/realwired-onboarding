@@ -1,9 +1,6 @@
 import React from 'react';
 import { FieldPreview } from './FieldPreview';
-import type { PropertyRecordField, RequestFormField } from '@/lib/onboarding-context';
-
-// Generic field type that works for both property and request fields
-type GenericField = PropertyRecordField | RequestFormField;
+import type { GenericField } from './types';
 
 interface DraggableFieldProps {
   field: GenericField;

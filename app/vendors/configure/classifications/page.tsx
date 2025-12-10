@@ -13,7 +13,7 @@ interface VendorStatus {
 }
 
 export default function VendorClassificationsPage() {
-  const { state, updateModuleProgress } = useOnboarding();
+  const { updateModuleProgress } = useOnboarding();
   const router = useRouter();
 
   // Track progress

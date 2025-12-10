@@ -76,7 +76,7 @@ const DROPDOWN_OPTIONS = {
 };
 
 export default function BidPanelsPage() {
-  const { state, updateDefinitions, updateModuleProgress } = useOnboarding();
+  const { updateDefinitions, updateModuleProgress } = useOnboarding();
   const router = useRouter();
   
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function BidPanelsPage() {
     setSelectedFieldId(null);
   };
 
-  const handleFieldUpdate = (fieldId: string, updates: any) => {
+  const handleFieldUpdate = (fieldId: string, updates: Partial<BidPanelField>) => {
     if (selectedPanelType === 'appraisal') {
       setAppraisalFields(prev =>
         prev.map(field => field.id === fieldId ? { ...field, ...updates } : field)

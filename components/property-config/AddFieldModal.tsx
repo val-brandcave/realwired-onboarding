@@ -24,7 +24,11 @@ export function AddFieldModal({ isOpen, onClose, onAdd }: AddFieldModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const fieldData: any = {
+    const fieldData: {
+      inputType: FieldInputType;
+      label: string;
+      dropdownOptions?: string[];
+    } = {
       inputType,
       label: label.trim() || 'New Field',
     };

@@ -31,7 +31,7 @@ export default function PropertyRecordConfigurePage() {
 
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [draggingFieldId, setDraggingFieldId] = useState<string | null>(null);
-  const [dragOverFieldId, setDragOverFieldId] = useState<string | null>(null);
+  const [_dragOverFieldId, setDragOverFieldId] = useState<string | null>(null);
   const [isAddFieldModalOpen, setIsAddFieldModalOpen] = useState(false);
   const [addFieldCategory, setAddFieldCategory] = useState<'overview' | 'advanced'>('overview');
 
@@ -55,7 +55,7 @@ export default function PropertyRecordConfigurePage() {
     setSelectedFieldId(null);
   };
 
-  const handleFieldUpdate = (fieldId: string, updates: any) => {
+  const handleFieldUpdate = (fieldId: string, updates: Partial<PropertyRecordField>) => {
     setFields(prevFields =>
       prevFields.map(field =>
         field.id === fieldId ? { ...field, ...updates } : field
@@ -166,7 +166,7 @@ export default function PropertyRecordConfigurePage() {
       order: fields.filter(f => f.category === addFieldCategory).length,
       column: 1,
       placeholder: '',
-      dropdownOptions: fieldData.dropdownOptions
+      options: fieldData.dropdownOptions
     };
 
     setFields([...fields, newField]);

@@ -1,8 +1,5 @@
 import React from 'react';
-import type { PropertyRecordField, RequestFormField } from '@/lib/onboarding-context';
-
-// Generic field type that works for both property and request fields
-type GenericField = PropertyRecordField | RequestFormField;
+import type { GenericField } from './types';
 
 interface FieldPreviewProps {
   field: GenericField;
@@ -10,7 +7,7 @@ interface FieldPreviewProps {
   onClick: () => void;
   onDelete?: () => void;
   isDragging?: boolean;
-  dragHandleProps?: any;
+  dragHandleProps?: Record<string, unknown>;
 }
 
 export function FieldPreview({ field, isSelected, onClick, onDelete, isDragging, dragHandleProps }: FieldPreviewProps) {

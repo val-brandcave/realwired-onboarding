@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export default function AdditionalSearchCriteriaPage() {
-  const { state, updateModuleProgress } = useOnboarding();
+  const { updateModuleProgress } = useOnboarding();
   const router = useRouter();
 
   // Track progress

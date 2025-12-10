@@ -3,7 +3,8 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useOnboarding, type OnboardingParticipant } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import React from "react";
 import { CircularProgress } from "./_components/CircularProgress";
 import { ModuleCard } from "./_components/ModuleCard";
 import { UnifiedHelpCenter } from "./_components/UnifiedHelpCenter";
@@ -172,7 +173,7 @@ export default function HubPageV2() {
   };
 
   // Define modules
-  const modules = [
+  const modules = React.useMemo(() => [
     {
       id: 'organization-setup',
       moduleNumber: 1,
@@ -272,14 +273,14 @@ export default function HubPageV2() {
         </svg>
       ),
     },
-  ];
+  ], [state.companySetup.completed, state.definitions.completed, state.users.completed, state.routing.completed, state.generalSettings.completed, state.itChecklist.completed, state.moduleStatuses]);
 
   const completedModules = modules.filter(m => m.completed).length;
   const module1Completed = modules[0].completed;
   const overallProgress = Math.round((completedModules / modules.length) * 100);
 
   // Determine module status
-  const getModuleStatus = (module: typeof modules[0], index: number): 'completed' | 'ready' | 'unassigned' | 'in-progress' => {
+  const getModuleStatus = useCallback((module: typeof modules[0], index: number): 'completed' | 'ready' | 'unassigned' | 'in-progress' => {
     if (module.completed) return 'completed';
     
     const currentUserId = 'primary-decision-maker';
@@ -298,14 +299,14 @@ export default function HubPageV2() {
     if (isAssigned) return 'ready';
     if (hasAnyAssignee) return 'ready'; // Assigned to someone else
     return 'unassigned';
-  };
+  }, [state.moduleAssignments, module1Completed, getModuleProgress]);
   
   // Find next module - prioritize in-progress, then ready modules
   const nextModule = useMemo(() => {
     const inProgress = modules.find((m, i) => getModuleStatus(m, i) === 'in-progress');
     if (inProgress) return inProgress;
     return modules.find(m => !m.completed);
-  }, [modules]);
+  }, [modules, getModuleStatus]);
 
   // Get CS configured sections
   const getConfiguredSections = (moduleId: string): string[] => {
@@ -583,7 +584,7 @@ export default function HubPageV2() {
               </span>
             </div>
             <div className="space-y-4">
-              {[...todoModules, ...unassignedModules].map((module, index) => {
+              {[...todoModules, ...unassignedModules].map((module) => {
                 const status = getModuleStatus(module, modules.indexOf(module));
                 const progressDetails = getProgressDetails(module.id);
                 return (
@@ -632,7 +633,7 @@ export default function HubPageV2() {
               </span>
             </div>
             <div className="space-y-4">
-              {inProgressModules.map((module, index) => {
+              {inProgressModules.map((module) => {
                 const status = getModuleStatus(module, modules.indexOf(module));
                 const progressDetails = getProgressDetails(module.id);
                 return (
@@ -681,7 +682,7 @@ export default function HubPageV2() {
               </span>
             </div>
             <div className="space-y-4">
-              {completedMods.map((module, index) => {
+              {completedMods.map((module) => {
                 const status = getModuleStatus(module, modules.indexOf(module));
                 const progressDetails = getProgressDetails(module.id);
                 return (

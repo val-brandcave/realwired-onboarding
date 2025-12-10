@@ -1,15 +1,12 @@
 import React, { useState } from 'react';
-import type { PropertyRecordField, RequestFormField } from '@/lib/onboarding-context';
+import type { GenericField } from './types';
 
 type FieldInputType = 'text' | 'textarea' | 'number' | 'select' | 'multiselect' | 'date' | 'file' | 'readonly' | 'link' | 'email' | 'tel' | 'checkbox';
-
-// Generic field type that works for both property and request fields
-type GenericField = PropertyRecordField | RequestFormField;
 
 interface FieldSettingsDrawerProps {
   field: GenericField | null;
   onClose: () => void;
-  onUpdate: (fieldId: string, updates: Partial<GenericField>) => void;
+  onUpdate: (fieldId: string, updates: Record<string, unknown>) => void;
   onDelete?: (fieldId: string) => void;
 }
 
@@ -28,7 +25,7 @@ export function FieldSettingsDrawer({ field, onClose, onUpdate, onDelete }: Fiel
   };
 
   const handleInputTypeChange = (value: FieldInputType) => {
-    const updates: Partial<GenericField> = { type: value as any };
+    const updates: Partial<GenericField> = { type: value as GenericField['type'] };
     
     // Initialize options array for select/multiselect/checkbox if not present
     if ((value === 'select' || value === 'multiselect' || value === 'checkbox') && !field.options) {

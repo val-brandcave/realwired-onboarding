@@ -17,7 +17,7 @@ interface VendorType {
 }
 
 export default function VendorTypesConfigurePage() {
-  const { state, updateModuleProgress } = useOnboarding();
+  const { updateModuleProgress } = useOnboarding();
   const router = useRouter();
 
   // Track progress

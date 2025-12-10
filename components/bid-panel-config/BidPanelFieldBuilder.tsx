@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { FieldPreview } from '../property-config/FieldPreview';
 import { DraggableField } from '../property-config/DraggableField';
 
 type FieldInputType = 'text' | 'textarea' | 'select' | 'number' | 'date';
@@ -24,7 +23,7 @@ interface BidPanelField {
 interface BidPanelFieldBuilderProps {
   fields: BidPanelField[];
   onFieldsChange: (fields: BidPanelField[]) => void;
-  onFieldUpdate: (fieldId: string, updates: any) => void;
+  onFieldUpdate: (fieldId: string, updates: Partial<BidPanelField>) => void;
   onFieldDelete: (fieldId: string) => void;
   onAddField: () => void;
   title: string;
@@ -34,7 +33,7 @@ interface BidPanelFieldBuilderProps {
 export function BidPanelFieldBuilder({
   fields,
   onFieldsChange,
-  onFieldUpdate,
+  onFieldUpdate: _onFieldUpdate,
   onFieldDelete,
   onAddField,
   title,
@@ -134,7 +133,7 @@ export function BidPanelFieldBuilder({
     };
   };
 
-  const selectedField = fields.find(f => f.id === selectedFieldId);
+  const _selectedField = fields.find(f => f.id === selectedFieldId);
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">

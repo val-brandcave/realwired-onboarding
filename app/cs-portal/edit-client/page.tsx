@@ -455,7 +455,7 @@ function EditClientContent() {
   ]);
 
   // Vendor Roster (Upload tab)
-  const [vendors, setVendors] = useState<Vendor[]>([
+  const [_vendors, _setVendors] = useState<Vendor[]>([
     { 
       id: 'v1', 
       name: 'John Appraiser', 
@@ -477,11 +477,11 @@ function EditClientContent() {
       specialties: ['Residential', 'Environmental'] 
     },
   ]);
-  const [newVendorName, setNewVendorName] = useState("");
-  const [newVendorCompany, setNewVendorCompany] = useState("");
-  const [newVendorEmail, setNewVendorEmail] = useState("");
-  const [newVendorPhone, setNewVendorPhone] = useState("");
-  const [newVendorLicense, setNewVendorLicense] = useState("");
+  const [_newVendorName, _setNewVendorName] = useState("");
+  const [_newVendorCompany, _setNewVendorCompany] = useState("");
+  const [_newVendorEmail, _setNewVendorEmail] = useState("");
+  const [_newVendorPhone, _setNewVendorPhone] = useState("");
+  const [_newVendorLicense, _setNewVendorLicense] = useState("");
   const [vendorTemplateStatus, _setVendorTemplateStatus] = useState<'none' | 'uploaded' | 'reviewed'>('uploaded');
 
   // Module 5: Routing States

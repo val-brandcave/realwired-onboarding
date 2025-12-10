@@ -50,7 +50,7 @@ export function ModuleCard({
   isModule1 = false,
 }: ModuleCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const router = useRouter();
+  const _router = useRouter();
 
   // Helper function to format date
   const formatDate = (dateString?: string) => {

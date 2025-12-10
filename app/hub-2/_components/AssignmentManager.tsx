@@ -13,8 +13,8 @@ interface AssignmentManagerProps {
 }
 
 export function AssignmentManager({
-  moduleId,
-  moduleTitle,
+  moduleId: _moduleId,
+  moduleTitle: _moduleTitle,
   assignedParticipants,
   availableParticipants,
   onUpdateAssignment,
