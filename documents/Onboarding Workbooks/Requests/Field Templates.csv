@@ -1,0 +1,20 @@
+Field Templates - Instructions,,,,,,,
+,,,,,,,
+"Field Templates are a type of field that allows you to create pre-saved blocks of commonly used, reusable text. This information is commonly used to bring information into engagement letters or bid letters that might change from request to request.",,,,,,,
+Please highlight values you would like to remove in RED,,,,,,,
+Please highlight values you would like to add in GREEN,,,,,,,
+Please BOLD values you would like to set as defaults,,,,,,,
+"If adding a new field template, please add the name of the new Field Template field to the right of the existing columns (Column I) and provide the name of each option below it. Please add another column to capture the content within that field template.",,,,,,,
+,,,,,,,
+,,,,,,,
+Intended Use of Request,Intended Use of Request - Content,Intended User of Request,Intended User of Request - Content,Scope of Work (Premise),Scope of Work (Premise) - Content,Occupancy,Occupancy - Content
+(See Values),(See Values),(See Values),(See Values),(See Values),(See Values),(See Values),(See Values)
+Loan Underwriting,The intended use of this appraisal is for loan underwriting decisions by Farmers & Merchants Bank and/or participants,Bank,The intended users of this report are [[insert bank name]] and/or affiliates.,No preseet values for this field template,No preseet values for this field template,No preseet values for this field template,No preseet values for this field template
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,

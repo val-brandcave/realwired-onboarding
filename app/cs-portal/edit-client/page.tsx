@@ -247,6 +247,34 @@ function EditClientContent() {
   const initiationDate = state.initiationDate || '2024-10-28';
   const [showDateEditModal, setShowDateEditModal] = useState(false);
   const [tempGoLiveDate, setTempGoLiveDate] = useState(projectedGoLiveDate);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>(['member-1', 'member-2', 'member-3', 'member-4', 'member-5']);
+  const [teamSearchQuery, setTeamSearchQuery] = useState('');
+
+  // CS Team Members Data
+  const availableCSTeam = [
+    { id: 'member-1', name: 'Sarah Johnson', role: 'Senior CS Manager', phone: '(555) 123-4567', email: 'sarah.j@youconnect.com', avatar: 'SJ', color: 'from-blue-500 to-blue-600' },
+    { id: 'member-2', name: 'Mike Chen', role: 'CS Specialist', phone: '(555) 234-5678', email: 'mike.c@youconnect.com', avatar: 'MC', color: 'from-green-500 to-green-600' },
+    { id: 'member-3', name: 'Emma Davis', role: 'CS Agent', phone: '(555) 345-6789', email: 'emma.d@youconnect.com', avatar: 'ED', color: 'from-purple-500 to-purple-600' },
+    { id: 'member-4', name: 'James Wilson', role: 'Technical Onboarding', phone: '(555) 456-7890', email: 'james.w@youconnect.com', avatar: 'JW', color: 'from-orange-500 to-orange-600' },
+    { id: 'member-5', name: 'Lisa Brown', role: 'Account Manager', phone: '(555) 567-8901', email: 'lisa.b@youconnect.com', avatar: 'LB', color: 'from-pink-500 to-pink-600' },
+    { id: 'member-6', name: 'David Miller', role: 'CS Agent', phone: '(555) 678-9012', email: 'david.m@youconnect.com', avatar: 'DM', color: 'from-indigo-500 to-indigo-600' },
+    { id: 'member-7', name: 'Rachel Green', role: 'Senior CS Manager', phone: '(555) 789-0123', email: 'rachel.g@youconnect.com', avatar: 'RG', color: 'from-teal-500 to-teal-600' },
+  ];
+
+  const filteredTeamMembers = availableCSTeam.filter(member =>
+    member.name.toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
+    member.role.toLowerCase().includes(teamSearchQuery.toLowerCase()) ||
+    member.email.toLowerCase().includes(teamSearchQuery.toLowerCase())
+  );
+
+  const toggleTeamMember = (memberId: string) => {
+    setSelectedTeamMembers(prev =>
+      prev.includes(memberId)
+        ? prev.filter(id => id !== memberId)
+        : [...prev, memberId]
+    );
+  };
   
   // Tab 1: Organization Info & URL
   const [customUrl, setCustomUrl] = useState("union-bank");
@@ -746,7 +774,7 @@ function EditClientContent() {
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Module Navigation */}
-        <aside className="w-64 bg-white border-r border-slate-200 overflow-y-auto">
+        <aside className="bg-white border-r border-slate-200 overflow-y-auto" style={{ width: '288px' }}>
           <div className="p-4">
             {/* Client Completion Status - Moved to Top */}
             <div className="pb-4 mb-6 border-b border-slate-200">
@@ -772,67 +800,37 @@ function EditClientContent() {
               Onboarding Modules
             </h2>
             <nav className="space-y-1 mb-6">
-              {MODULES.map((module) => (
-                <div key={module.id} className="group relative">
-                  <div className="flex items-stretch gap-1">
-                    <button
-                      onClick={() => {
-                        setSelectedModuleId(module.id);
-                        setSelectedStepId(module.steps[0].id);
-                        setShowTicketsView(false);
-                      }}
-                      className={`flex-1 flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                        selectedModuleId === module.id && !showTicketsView
-                          ? 'bg-[#9F2E2B] text-white'
-                          : 'text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {module.icon}
-                      <span className="truncate flex-1 text-left">{module.title}</span>
-                      <div className="flex-shrink-0">
-                        <SmallDonut 
-                          percentage={getModuleProgress(module.id)} 
-                          size={28}
-                          strokeWidth={2}
-                          showLabel={false}
-                        />
-                      </div>
-                    </button>
-                    
-                    {/* Calendar icon for setting completion date */}
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleOpenDateModal(module);
-                      }}
-                      className={`px-2 py-2.5 rounded-lg transition-colors flex items-center justify-center ${
-                        selectedModuleId === module.id && !showTicketsView
-                          ? 'bg-[#9F2E2B] text-white hover:bg-[#8A2826]'
-                          : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'
-                      }`}
-                      title={`Set target date: ${formatDate(moduleCompletionDates[module.id])}`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                  </div>
-                  
-                  {/* Target date indicator below button */}
-                  {moduleCompletionDates[module.id] && (
-                    <div className={`text-xs px-3 py-1 mt-1 rounded text-center ${
-                      isDateAtRisk(moduleCompletionDates[module.id])
-                        ? 'bg-red-50 text-red-700 border border-red-200'
-                        : 'bg-blue-50 text-blue-700 border border-blue-200'
-                    }`}>
-                      Target: {formatDate(moduleCompletionDates[module.id])}
-                      {isDateAtRisk(moduleCompletionDates[module.id]) && (
-                        <span className="ml-1">⚠️</span>
-                      )}
+              {MODULES.map((module) => {
+                const isSelected = selectedModuleId === module.id && !showTicketsView;
+                return (
+                  <button
+                    key={module.id}
+                    onClick={() => {
+                      setSelectedModuleId(module.id);
+                      setSelectedStepId(module.steps[0].id);
+                      setShowTicketsView(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                      isSelected
+                        ? 'bg-[#9F2E2B] text-white'
+                        : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {module.icon}
+                    <span className="truncate flex-1 text-left">{module.title}</span>
+                    <div className="flex-shrink-0 ml-auto">
+                      <SmallDonut 
+                        percentage={getModuleProgress(module.id)} 
+                        size={24}
+                        strokeWidth={2.5}
+                        showLabel={false}
+                        color={isSelected ? "#FFFFFF" : "#9F2E2B"}
+                        backgroundColor={isSelected ? "#7D2522" : "#E5E7EB"}
+                      />
                     </div>
-                  )}
-                </div>
-              ))}
+                  </button>
+                );
+              })}
             </nav>
 
             {/* Onboarding Tickets Section */}
@@ -865,46 +863,75 @@ function EditClientContent() {
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto p-6 lg:p-8">
-            {/* Projected Go-Live Date Banner */}
-            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Projected Go-Live Date</div>
-                    <div className="text-base font-bold text-slate-900">
-                      {new Date(projectedGoLiveDate).toLocaleDateString('en-US', { 
-                        month: 'long', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowDateEditModal(true)}
-                  className="px-3 py-1.5 text-sm font-medium text-blue-700 hover:text-blue-900 bg-white border-2 border-blue-300 hover:border-blue-400 rounded-lg transition-colors"
-                >
-                  Edit Date
-                </button>
-              </div>
-            </div>
-
             {/* Organization Header */}
             <div className="mb-8 flex items-start justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-slate-900 mb-2">{clientName}</h1>
                 <div className="flex items-center gap-4 text-sm text-slate-600">
+                  {/* Progress Badge */}
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">In Progress</span>
-                    <span>65% Complete</span>
+                  </div>
+
+                  {/* Completion Percentage */}
+                  <span>65% Complete</span>
+
+                  {/* Go Live Date */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500">Go Live:</span>
+                    <span className="font-medium text-slate-900">
+                      {new Date(projectedGoLiveDate).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })}
+                    </span>
+                    <button
+                      onClick={() => setShowDateEditModal(true)}
+                      className="p-1 hover:bg-slate-100 rounded transition-colors"
+                      title="Edit go-live date"
+                    >
+                      <svg className="w-4 h-4 text-slate-400 hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* CS Team Avatars */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500">CS Team:</span>
+                    <div className="flex items-center -space-x-2">
+                      {selectedTeamMembers.slice(0, 3).map((memberId) => {
+                        const member = availableCSTeam.find(m => m.id === memberId);
+                        if (!member) return null;
+                        return (
+                          <div 
+                            key={member.id}
+                            className={`w-7 h-7 rounded-full bg-gradient-to-br ${member.color} border-2 border-white flex items-center justify-center text-white text-xs font-semibold`}
+                            title={member.name}
+                          >
+                            {member.avatar}
+                          </div>
+                        );
+                      })}
+                      {selectedTeamMembers.length > 3 && (
+                        <div className="w-7 h-7 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-slate-600 text-xs font-semibold" title={`${selectedTeamMembers.length - 3} more team members`}>
+                          +{selectedTeamMembers.length - 3}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setShowTeamModal(true)}
+                      className="p-1 hover:bg-slate-100 rounded transition-colors"
+                      title="Manage CS team"
+                    >
+                      <svg className="w-4 h-4 text-slate-400 hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -3275,6 +3302,129 @@ function EditClientContent() {
                 className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Set Target Date
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CS Team Selection Modal */}
+      {showTeamModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="border-b border-slate-200 p-5 flex items-center justify-between flex-shrink-0">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Manage CS Team</h2>
+                <p className="text-sm text-slate-600 mt-1">Assign team members to this client</p>
+              </div>
+              <button
+                onClick={() => setShowTeamModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Close modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-5 border-b border-slate-200 flex-shrink-0">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={teamSearchQuery}
+                  onChange={(e) => setTeamSearchQuery(e.target.value)}
+                  placeholder="Search by name, role, or email..."
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] focus:border-transparent text-sm"
+                />
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                {selectedTeamMembers.length} member{selectedTeamMembers.length !== 1 ? 's' : ''} selected
+              </p>
+            </div>
+
+            {/* Team Members List */}
+            <div className="flex-1 overflow-y-auto p-5">
+              <div className="space-y-2">
+                {filteredTeamMembers.length > 0 ? (
+                  filteredTeamMembers.map((member) => {
+                    const isSelected = selectedTeamMembers.includes(member.id);
+                    return (
+                      <label
+                        key={member.id}
+                        className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-[#9F2E2B] bg-[#9F2E2B]/5'
+                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleTeamMember(member.id)}
+                          className="w-4 h-4 text-[#9F2E2B] border-slate-300 rounded focus:ring-[#9F2E2B]"
+                        />
+                        
+                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${member.color} border-2 border-white flex items-center justify-center text-white text-sm font-semibold flex-shrink-0`}>
+                          {member.avatar}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-slate-900">{member.name}</div>
+                          <div className="text-xs text-slate-600">{member.role}</div>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-slate-500">
+                            <div className="flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                              </svg>
+                              {member.phone}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              {member.email}
+                            </div>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-8 text-slate-500">
+                    <svg className="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm">No team members found</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-slate-200 p-5 flex items-center justify-end gap-3 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setShowTeamModal(false);
+                  setTeamSearchQuery('');
+                }}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowTeamModal(false);
+                  setTeamSearchQuery('');
+                }}
+                className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md"
+              >
+                Save Team Assignment
               </button>
             </div>
           </div>

@@ -5,81 +5,10 @@ import { useOnboarding } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import type { RequestFormField } from "@/lib/onboarding-context";
-
-type FieldInputType = 'text' | 'textarea' | 'number' | 'email' | 'tel' | 'date' | 'select' | 'multiselect';
-
-interface ExtendedRequestField extends RequestFormField {
-  inputType?: FieldInputType;
-  dropdownOptions?: string[];
-  systemRequired?: boolean; // Cannot be changed by user
-}
-
-// Get available input types based on field context
-function getAvailableInputTypes(fieldId: string): { value: FieldInputType; label: string }[] {
-  // Email fields
-  if (fieldId === 'borrower-email') {
-    return [
-      { value: 'email', label: 'Email Input' },
-      { value: 'text', label: 'Text Input' }
-    ];
-  }
-  
-  // Phone fields
-  if (fieldId === 'borrower-phone') {
-    return [
-      { value: 'tel', label: 'Phone Input' },
-      { value: 'text', label: 'Text Input' }
-    ];
-  }
-  
-  // Date fields
-  if (fieldId === 'order-date' || fieldId === 'due-date') {
-    return [
-      { value: 'date', label: 'Date Picker' }
-    ];
-  }
-  
-  // Numeric fields
-  if (fieldId === 'loan-amount' || fieldId === 'ltv-ratio' || fieldId === 'sales-price') {
-    return [
-      { value: 'number', label: 'Numeric Value' },
-      { value: 'text', label: 'Text Input' }
-    ];
-  }
-  
-  // Request Type field (predefined dropdown from previous page)
-  if (fieldId === 'request-type') {
-    return [
-      { value: 'select', label: 'Dropdown (predefined)' }
-    ];
-  }
-  
-  // All other fields
-  return [
-    { value: 'text', label: 'Text Input' },
-    { value: 'textarea', label: 'Multi-line Text Field' },
-    { value: 'select', label: 'Dropdown Selection' },
-    { value: 'multiselect', label: 'Multi-select Dropdown' }
-  ];
-}
-
-// Get default dropdown options for fields
-function getDefaultDropdownOptions(fieldId: string): string[] {
-  const defaults: Record<string, string[]> = {
-    'request-purpose': ['Additional Collateral', 'Additional Funding', 'Classified Asset', 'Construction Inspection', 'Construction (to perm secondary mkt.)', 'Construction (w/perm in-house)', 'External Property Inspection', 'Foreclosure', 'Final Inspection', 'new loan (secondary market)', 'new loan', 'OREO Asset', 'Loan Renewal (new funds)', 'Loan Renewal (no new funds)'],
-    'loan-type': ['Business', 'Real Estate', 'Residence'],
-    'ordering-choices': ['Engage at Discretion', 'Obtain Bids - Engage Lowest', 'Obtain Bids - Notify Account Officer', 'ObtainBids-PrePymt Req-NotifyBorrower'],
-    'payment-method': ['Rolled into Loan', 'Customer Will Pay', 'Bank Will Pay'],
-    'intended-use': ['Conventional Loan Underwriting', 'SBA Loan Underwriting', 'Potential Foreclosure'],
-    'contact-type': ['Borrower', 'Property Manager', 'Seller', 'Tenant'],
-    'marketing-status': ['For Sale', 'Under Contract', 'Not on the Market', 'Recently Sold'],
-    'rush-order': ['Yes', 'No'],
-    'appraisal-type': ['1004 Full Appraisal', '1025 Small Residential Income', '1073 Condo Appraisal', '2055 Exterior Only', 'Commercial Narrative Report', 'Phase I Environmental Site Assessment', 'Desk Review', 'Other'],
-    'turn-time': ['3 Business Days', '5 Business Days', '7 Business Days', '10 Business Days', '14 Business Days', '21 Business Days'],
-  };
-  
-  return defaults[fieldId] || [];
-}
+import { DraggableField } from "@/components/property-config/DraggableField";
+import { FieldSettingsDrawer } from "@/components/property-config/FieldSettingsDrawer";
+import { AddFieldModal } from "@/components/property-config/AddFieldModal";
+import type { FieldInputType } from "@/components/property-config/AddFieldModal";
 
 export default function RequestFormConfigurePage() {
   const { state, updateDefinitions, updateModuleProgress } = useOnboarding();
@@ -87,191 +16,227 @@ export default function RequestFormConfigurePage() {
   
   // Track progress when user lands on this step
   useEffect(() => {
-    updateModuleProgress('definitions', 4, 5); // Step 4 of 5 - 80%
+    updateModuleProgress('definitions', 4, 5); // Step 4 of 5
   }, [updateModuleProgress]);
 
-  // Initialize fields with input types
-  const [fields, setFields] = useState<ExtendedRequestField[]>(
-    state.definitions.requestFormFields.map(field => ({
+  // Initialize fields with order and column assignment
+  const [fields, setFields] = useState<RequestFormField[]>(() => {
+    return state.definitions.requestFormFields.map((field, index) => ({
       ...field,
-      inputType: (field.type as FieldInputType) || 'text',
-      dropdownOptions: field.options || getDefaultDropdownOptions(field.id)
-    }))
-  );
+      order: field.order ?? index,
+      column: field.column ?? ((index % 2) + 1 as 1 | 2),
+      systemFixed: field.systemRequired && ['request-type', 'property-address'].includes(field.id)
+    }));
+  });
 
-  const [editingDropdownField, setEditingDropdownField] = useState<string | null>(null);
-  const [newDropdownItem, setNewDropdownItem] = useState('');
-  
-  // Custom field creation
-  const [showCustomFieldForm, setShowCustomFieldForm] = useState(false);
-  const [customFieldLabel, setCustomFieldLabel] = useState('');
-  const [customFieldType, setCustomFieldType] = useState<FieldInputType>('text');
-  const [customFieldOptions, setCustomFieldOptions] = useState<string[]>([]);
-  const [newCustomOption, setNewCustomOption] = useState('');
-  const [customFieldRequired, setCustomFieldRequired] = useState(false);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [draggingFieldId, setDraggingFieldId] = useState<string | null>(null);
+  const [dragOverFieldId, setDragOverFieldId] = useState<string | null>(null);
+  const [isAddFieldModalOpen, setIsAddFieldModalOpen] = useState(false);
+  const [addFieldCategory, setAddFieldCategory] = useState<'overview' | 'details'>('overview');
 
-  const toggleField = (fieldId: string) => {
-    setFields(prevFields =>
-      prevFields.map(field =>
-        field.id === fieldId && !field.readonly && !field.systemRequired
-          ? { ...field, enabled: !field.enabled }
-          : field
-      )
-    );
+  // Get fields by category and column
+  const getFieldsBySection = (category: 'overview' | 'details', column: 1 | 2) => {
+    return fields
+      .filter(f => f.category === category && f.column === column)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   };
 
-  const toggleRequired = (fieldId: string) => {
-    setFields(prevFields =>
-      prevFields.map(field =>
-        field.id === fieldId && !field.readonly && !field.systemRequired
-          ? { ...field, required: !field.required }
-          : field
-      )
-    );
-  };
-
-  const updateFieldLabel = (fieldId: string, newLabel: string) => {
-    setFields(prevFields =>
-      prevFields.map(field =>
-        field.id === fieldId ? { ...field, customLabel: newLabel } : field
-      )
-    );
-  };
-
-  const updateFieldInputType = (fieldId: string, inputType: FieldInputType) => {
-    setFields(prevFields =>
-      prevFields.map(field =>
-        field.id === fieldId 
-          ? { 
-              ...field, 
-              inputType,
-              dropdownOptions: (inputType === 'select' || inputType === 'multiselect') 
-                ? (field.dropdownOptions || getDefaultDropdownOptions(fieldId))
-                : undefined
-            }
-          : field
-      )
-    );
-  };
-
-  const addDropdownItem = (fieldId: string) => {
-    if (!newDropdownItem.trim()) return;
-    
-    setFields(prevFields =>
-      prevFields.map(field =>
-        field.id === fieldId 
-          ? { ...field, dropdownOptions: [...(field.dropdownOptions || []), newDropdownItem.trim()] }
-          : field
-      )
-    );
-    setNewDropdownItem('');
-  };
-
-  const removeDropdownItem = (fieldId: string, item: string) => {
-    setFields(prevFields =>
-      prevFields.map(field =>
-        field.id === fieldId 
-          ? { ...field, dropdownOptions: field.dropdownOptions?.filter(i => i !== item) }
-          : field
-      )
-    );
-  };
-
-  const handleAddCustomField = () => {
-    if (!customFieldLabel.trim()) return;
-
-    const newField: ExtendedRequestField = {
-      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      label: customFieldLabel.trim(),
-      customLabel: customFieldLabel.trim(),
-      category: 'details',
-      type: customFieldType === 'multiselect' ? 'select' : customFieldType,
-      enabled: true,
-      required: customFieldRequired,
-      systemRequired: false,
-      readonly: false,
-      inputType: customFieldType,
-      dropdownOptions: (customFieldType === 'select' || customFieldType === 'multiselect') 
-        ? customFieldOptions 
-        : undefined,
-    };
-
-    setFields([...fields, newField]);
-    
-    // Reset form
-    setCustomFieldLabel('');
-    setCustomFieldType('text');
-    setCustomFieldOptions([]);
-    setNewCustomOption('');
-    setCustomFieldRequired(false);
-    setShowCustomFieldForm(false);
-  };
-
-  const handleAddCustomOption = () => {
-    if (newCustomOption.trim() && !customFieldOptions.includes(newCustomOption.trim())) {
-      setCustomFieldOptions([...customFieldOptions, newCustomOption.trim()]);
-      setNewCustomOption('');
+  const handleFieldClick = (fieldId: string) => {
+    // Toggle: if clicking the same field, close drawer
+    if (selectedFieldId === fieldId) {
+      setSelectedFieldId(null);
+    } else {
+      setSelectedFieldId(fieldId);
     }
   };
 
-  const handleRemoveCustomOption = (option: string) => {
-    setCustomFieldOptions(customFieldOptions.filter(o => o !== option));
+  const handleCloseDrawer = () => {
+    setSelectedFieldId(null);
   };
 
-  const handleRemoveCustomField = (fieldId: string) => {
+  const handleFieldUpdate = (fieldId: string, updates: any) => {
+    setFields(prevFields =>
+      prevFields.map(field =>
+        field.id === fieldId ? { ...field, ...updates } : field
+      )
+    );
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (fieldId: string) => {
+    setDraggingFieldId(fieldId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingFieldId(null);
+    setDragOverFieldId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetFieldId: string, targetColumn: 1 | 2, targetCategory: 'overview' | 'details') => {
+    if (!draggingFieldId || draggingFieldId === targetFieldId) return;
+
+    const draggingField = fields.find(f => f.id === draggingFieldId);
+    const targetField = fields.find(f => f.id === targetFieldId);
+
+    if (!draggingField || !targetField) return;
+
+    // Cannot drag between sections
+    if (draggingField.category !== targetCategory) return;
+
+    setFields(prevFields => {
+      const newFields = [...prevFields];
+      
+      // Get all fields in the target column and category
+      const categoryFields = newFields.filter(f => 
+        f.category === targetCategory && f.column === targetColumn
+      ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      const draggingIndex = categoryFields.findIndex(f => f.id === draggingFieldId);
+      const targetIndex = categoryFields.findIndex(f => f.id === targetFieldId);
+
+      // Update the dragging field's column
+      const fieldToMove = newFields.find(f => f.id === draggingFieldId);
+      if (fieldToMove) {
+        fieldToMove.column = targetColumn;
+      }
+
+      if (draggingIndex === -1) {
+        // Moving from different column - insert at target position
+        categoryFields.splice(targetIndex, 0, fieldToMove!);
+      } else {
+        // Reordering within same column - remove and insert at new position
+        const [removed] = categoryFields.splice(draggingIndex, 1);
+        categoryFields.splice(targetIndex, 0, removed);
+      }
+
+      // Update orders for all fields in this column/category
+      categoryFields.forEach((field, idx) => {
+        field.order = idx;
+      });
+
+      return newFields;
+    });
+
+    setDraggingFieldId(null);
+    setDragOverFieldId(null);
+  };
+
+  const handleDropOnColumn = (column: 1 | 2, category: 'overview' | 'details') => {
+    if (!draggingFieldId) return;
+
+    const draggingField = fields.find(f => f.id === draggingFieldId);
+    if (!draggingField || draggingField.category !== category) return;
+
+    setFields(prevFields =>
+      prevFields.map(field =>
+        field.id === draggingFieldId
+          ? { ...field, column, order: 9999 } // Move to end
+          : field
+      )
+    );
+
+    setDraggingFieldId(null);
+  };
+
+  const handleOpenAddFieldModal = (category: 'overview' | 'details') => {
+    setAddFieldCategory(category);
+    setIsAddFieldModalOpen(true);
+  };
+
+  const handleAddField = (fieldData: {
+    inputType: FieldInputType;
+    label: string;
+    dropdownOptions?: string[];
+  }) => {
+    const newField: RequestFormField = {
+      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      label: fieldData.label,
+      customLabel: fieldData.label,
+      category: addFieldCategory,
+      type: fieldData.inputType as RequestFormField['type'],
+      enabled: true,
+      required: false,
+      systemRequired: false,
+      systemFixed: false,
+      readonly: false,
+      order: fields.filter(f => f.category === addFieldCategory).length,
+      column: 1,
+      placeholder: '',
+      dropdownOptions: fieldData.dropdownOptions
+    };
+
+    setFields([...fields, newField]);
+    setSelectedFieldId(newField.id);
+    setIsAddFieldModalOpen(false);
+  };
+
+  const handleDeleteField = (fieldId: string) => {
     if (fieldId.startsWith('custom-')) {
       setFields(fields.filter(f => f.id !== fieldId));
+      if (selectedFieldId === fieldId) {
+        setSelectedFieldId(null);
+      }
     }
   };
 
   const handleContinue = () => {
-    updateDefinitions({ 
-      requestFormFields: fields
-    });
+    updateDefinitions({ requestFormFields: fields });
     router.push('/definitions/bid-panels');
   };
 
-  const overviewFields = fields.filter(f => f.category === 'overview');
-  const detailsFields = fields.filter(f => f.category === 'details');
-  const enabledCount = fields.filter(f => f.enabled && !f.readonly).length;
+  const selectedField = fields.find(f => f.id === selectedFieldId) || null;
+  const enabledCount = fields.filter(f => f.enabled).length;
 
   const steps = [
     { id: '1', label: 'Property Categories', status: 'completed' as const },
     { id: '2', label: 'Property Fields', status: 'completed' as const },
     { id: '3', label: 'Request Types', status: 'completed' as const },
     { id: '4', label: 'Request Form', status: 'in_progress' as const },
-    { id: '5', label: 'Bid Panels', status: 'not_started' as const },
   ];
 
   return (
     <MainLayout 
-      currentStep={3} 
+      currentStep={1} 
       steps={steps}
       title="Definitions"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div 
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        onClick={(e) => {
+          // Close drawer if clicking outside field cards
+          if ((e.target as HTMLElement).closest('[data-field-card]') === null &&
+              (e.target as HTMLElement).closest('[data-settings-drawer]') === null) {
+            setSelectedFieldId(null);
+          }
+        }}
+      >
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
             Configure Request Form Fields
           </h1>
           <p className="text-base text-muted-foreground">
-            Customize the fields that appear in all request forms
+            Click on a field to configure it. Drag fields to reorder them within columns.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Main Content (2/3 width) */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             {/* Selection Summary */}
-            <div className="bg-card border border-border rounded-lg p-4 mb-6">
+            <div className="bg-card border border-border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span className="text-sm font-semibold text-foreground">
-                    {enabledCount} of {detailsFields.length} detail fields selected
+                    {enabledCount} of {fields.length} fields visible to Field Officer
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground">
@@ -281,199 +246,171 @@ export default function RequestFormConfigurePage() {
             </div>
 
             {/* Overview Section */}
-            <div className="bg-card border border-border rounded-xl p-6 mb-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Overview Fields
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Basic request context (read-only reference fields)
-              </p>
-              
-              <div className="space-y-3">
-                {overviewFields.map((field) => (
-                  <RequestFieldConfiguration
-                    key={field.id}
-                    field={field}
-                    onToggle={toggleField}
-                    onToggleRequired={toggleRequired}
-                    onLabelUpdate={updateFieldLabel}
-                    onInputTypeUpdate={updateFieldInputType}
-                    onAddDropdownItem={addDropdownItem}
-                    onRemoveDropdownItem={removeDropdownItem}
-                    editingDropdownField={editingDropdownField}
-                    setEditingDropdownField={setEditingDropdownField}
-                    newDropdownItem={newDropdownItem}
-                    setNewDropdownItem={setNewDropdownItem}
-                    isPredefinedDropdown={field.id === 'request-type'}
-                  />
-                ))}
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              {/* Section Header */}
+              <div className="p-6 border-b border-border flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Overview
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Request context and property information
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleOpenAddFieldModal('overview')}
+                  className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Field
+                </button>
+              </div>
+
+              {/* Two Column Layout */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* Column 1 */}
+                <div
+                  className="p-6 min-h-[200px]"
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDropOnColumn(1, 'overview')}
+                >
+                  {getFieldsBySection('overview', 1).map((field) => (
+                    <DraggableField
+                      key={field.id}
+                      field={field}
+                      isSelected={selectedFieldId === field.id}
+                      onClick={() => handleFieldClick(field.id)}
+                      onDelete={() => handleDeleteField(field.id)}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                      onDrop={(targetId) => handleDrop(targetId, 1, 'overview')}
+                      isDragging={draggingFieldId === field.id}
+                    />
+                  ))}
+                  {getFieldsBySection('overview', 1).length === 0 && (
+                    <div className="flex items-center justify-center h-32 border-2 border-dashed border-border rounded-lg">
+                      <p className="text-sm text-muted-foreground">Drag fields here</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Column 2 */}
+                <div
+                  className="p-6 min-h-[200px]"
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDropOnColumn(2, 'overview')}
+                >
+                  {getFieldsBySection('overview', 2).map((field) => (
+                    <DraggableField
+                      key={field.id}
+                      field={field}
+                      isSelected={selectedFieldId === field.id}
+                      onClick={() => handleFieldClick(field.id)}
+                      onDelete={() => handleDeleteField(field.id)}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                      onDrop={(targetId) => handleDrop(targetId, 2, 'overview')}
+                      isDragging={draggingFieldId === field.id}
+                    />
+                  ))}
+                  {getFieldsBySection('overview', 2).length === 0 && (
+                    <div className="flex items-center justify-center h-32 border-2 border-dashed border-border rounded-lg">
+                      <p className="text-sm text-muted-foreground">Drag fields here</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Details Section */}
-            <div className="bg-card border border-border rounded-xl p-6 mb-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Request Details
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Customizable fields for request information
-              </p>
-              
-              <div className="space-y-3">
-                {detailsFields.map((field) => (
-                  <RequestFieldConfiguration
-                    key={field.id}
-                    field={field}
-                    onToggle={toggleField}
-                    onToggleRequired={toggleRequired}
-                    onLabelUpdate={updateFieldLabel}
-                    onInputTypeUpdate={updateFieldInputType}
-                    onAddDropdownItem={addDropdownItem}
-                    onRemoveDropdownItem={removeDropdownItem}
-                    editingDropdownField={editingDropdownField}
-                    setEditingDropdownField={setEditingDropdownField}
-                    newDropdownItem={newDropdownItem}
-                    setNewDropdownItem={setNewDropdownItem}
-                    isPredefinedDropdown={false}
-                    isCustomField={field.id.startsWith('custom-')}
-                    onRemoveCustomField={handleRemoveCustomField}
-                  />
-                ))}
-
-                {/* Add Custom Field Button/Form */}
-                {!showCustomFieldForm ? (
-                  <button
-                    onClick={() => setShowCustomFieldForm(true)}
-                    className="w-full px-4 py-3 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors flex items-center justify-center gap-2 border-2 border-dashed border-primary/30"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            {/* Request Details Section */}
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              {/* Section Header */}
+              <div className="p-6 border-b border-border flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Add Custom Field
-                  </button>
-                ) : (
-                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground">Create Custom Field</h3>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-foreground mb-1">
-                        Field Label <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={customFieldLabel}
-                        onChange={(e) => setCustomFieldLabel(e.target.value)}
-                        placeholder="e.g., Branch Number, Loan Purpose"
-                        className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
+                    Request Details
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Loan and request-specific information
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleOpenAddFieldModal('details')}
+                  className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Field
+                </button>
+              </div>
 
-                    <div>
-                      <label htmlFor="custom-field-type-request" className="block text-xs font-medium text-foreground mb-1">
-                        Input Type <span className="text-destructive">*</span>
-                      </label>
-                      <select
-                        id="custom-field-type-request"
-                        value={customFieldType}
-                        onChange={(e) => setCustomFieldType(e.target.value as FieldInputType)}
-                        className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        <option value="text">Text</option>
-                        <option value="number">Number</option>
-                        <option value="email">Email</option>
-                        <option value="tel">Phone</option>
-                        <option value="date">Date</option>
-                        <option value="textarea">Text Area</option>
-                        <option value="select">Dropdown (Select)</option>
-                      </select>
+              {/* Two Column Layout */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* Column 1 */}
+                <div
+                  className="p-6 min-h-[400px]"
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDropOnColumn(1, 'details')}
+                >
+                  {getFieldsBySection('details', 1).map((field) => (
+                    <DraggableField
+                      key={field.id}
+                      field={field}
+                      isSelected={selectedFieldId === field.id}
+                      onClick={() => handleFieldClick(field.id)}
+                      onDelete={() => handleDeleteField(field.id)}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                      onDrop={(targetId) => handleDrop(targetId, 1, 'details')}
+                      isDragging={draggingFieldId === field.id}
+                    />
+                  ))}
+                  {getFieldsBySection('details', 1).length === 0 && (
+                    <div className="flex items-center justify-center h-32 border-2 border-dashed border-border rounded-lg">
+                      <p className="text-sm text-muted-foreground">Drag fields here</p>
                     </div>
+                  )}
+                </div>
 
-                    <div className="flex items-center gap-2">
-                      <input
-                        id="custom-field-required-request"
-                        type="checkbox"
-                        checked={customFieldRequired}
-                        onChange={(e) => setCustomFieldRequired(e.target.checked)}
-                        className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
-                      />
-                      <label htmlFor="custom-field-required-request" className="text-xs font-medium text-foreground cursor-pointer">
-                        Mark as required field
-                      </label>
+                {/* Column 2 */}
+                <div
+                  className="p-6 min-h-[400px]"
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDropOnColumn(2, 'details')}
+                >
+                  {getFieldsBySection('details', 2).map((field) => (
+                    <DraggableField
+                      key={field.id}
+                      field={field}
+                      isSelected={selectedFieldId === field.id}
+                      onClick={() => handleFieldClick(field.id)}
+                      onDelete={() => handleDeleteField(field.id)}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                      onDrop={(targetId) => handleDrop(targetId, 2, 'details')}
+                      isDragging={draggingFieldId === field.id}
+                    />
+                  ))}
+                  {getFieldsBySection('details', 2).length === 0 && (
+                    <div className="flex items-center justify-center h-32 border-2 border-dashed border-border rounded-lg">
+                      <p className="text-sm text-muted-foreground">Drag fields here</p>
                     </div>
-
-                    {(customFieldType === 'select' || customFieldType === 'multiselect') && (
-                      <div>
-                        <label className="block text-xs font-medium text-foreground mb-1">
-                          Dropdown Options
-                        </label>
-                        <div className="space-y-2">
-                          {customFieldOptions.map((option, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              <span className="flex-1 px-2 py-1 bg-white border border-input rounded text-xs">
-                                {option}
-                              </span>
-                              <button
-                                onClick={() => handleRemoveCustomOption(option)}
-                                className="text-destructive hover:text-destructive/80"
-                                aria-label={`Remove ${option}`}
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          ))}
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={newCustomOption}
-                              onChange={(e) => setNewCustomOption(e.target.value)}
-                              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomOption())}
-                              placeholder="Add option"
-                              className="flex-1 px-3 py-1.5 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                            />
-                            <button
-                              onClick={handleAddCustomOption}
-                              className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-                            >
-                              Add
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2 pt-2">
-                      <button
-                        onClick={handleAddCustomField}
-                        disabled={!customFieldLabel.trim() || ((customFieldType === 'select' || customFieldType === 'multiselect') && customFieldOptions.length === 0)}
-                        className="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Create Field
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowCustomFieldForm(false);
-                          setCustomFieldLabel('');
-                          setCustomFieldType('text');
-                          setCustomFieldOptions([]);
-                          setNewCustomOption('');
-                          setCustomFieldRequired(false);
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
 
@@ -489,7 +426,7 @@ export default function RequestFormConfigurePage() {
                 onClick={handleContinue}
                 className="px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all"
               >
-                Next: Configure Bid Panels →
+                Next: Bid Panel Configuration →
               </button>
             </div>
           </div>
@@ -500,7 +437,7 @@ export default function RequestFormConfigurePage() {
               <div className="mb-4">
                 <h3 className="font-semibold text-foreground text-sm mb-2">Why We Need This</h3>
                 <p className="text-xs text-muted-foreground">
-                  Request form fields capture essential information when users submit new requests. Customize these fields to match your workflow and requirements.
+                  Request form fields capture essential information about each appraisal request. Customize these fields to match your loan workflow and requirements.
                 </p>
               </div>
 
@@ -537,7 +474,7 @@ export default function RequestFormConfigurePage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <p className="text-xs text-blue-900">
-                      <strong>Tip:</strong> Overview fields are read-only references. Detail fields can be customized with different input types and options.
+                      <strong>Tip:</strong> Overview fields show request context. Details fields collect loan and appraisal information from field officers.
                     </p>
                   </div>
                 </div>
@@ -546,237 +483,24 @@ export default function RequestFormConfigurePage() {
           </div>
         </div>
       </div>
+
+      {/* Field Settings Drawer */}
+      {selectedField && (
+        <FieldSettingsDrawer
+          field={selectedField}
+          onClose={handleCloseDrawer}
+          onUpdate={handleFieldUpdate}
+          onDelete={handleDeleteField}
+        />
+      )}
+
+      {/* Add Field Modal */}
+      <AddFieldModal
+        isOpen={isAddFieldModalOpen}
+        onClose={() => setIsAddFieldModalOpen(false)}
+        onAdd={handleAddField}
+      />
     </MainLayout>
   );
 }
 
-// Field Configuration Component (similar to property fields)
-function RequestFieldConfiguration({
-  field,
-  onToggle,
-  onToggleRequired,
-  onLabelUpdate,
-  onInputTypeUpdate,
-  onAddDropdownItem,
-  onRemoveDropdownItem,
-  editingDropdownField,
-  setEditingDropdownField,
-  newDropdownItem,
-  setNewDropdownItem,
-  isPredefinedDropdown = false,
-  isCustomField = false,
-  onRemoveCustomField
-}: {
-  field: ExtendedRequestField;
-  onToggle: (fieldId: string) => void;
-  onToggleRequired: (fieldId: string) => void;
-  onLabelUpdate: (fieldId: string, label: string) => void;
-  onInputTypeUpdate: (fieldId: string, type: FieldInputType) => void;
-  onAddDropdownItem: (fieldId: string) => void;
-  onRemoveDropdownItem: (fieldId: string, item: string) => void;
-  editingDropdownField: string | null;
-  setEditingDropdownField: (fieldId: string | null) => void;
-  newDropdownItem: string;
-  setNewDropdownItem: (value: string) => void;
-  isPredefinedDropdown?: boolean;
-  isCustomField?: boolean;
-  onRemoveCustomField?: (fieldId: string) => void;
-}) {
-  const availableInputTypes = getAvailableInputTypes(field.id);
-  const showDropdownManagement = (field.inputType === 'select' || field.inputType === 'multiselect') && !isPredefinedDropdown && !field.readonly;
-  const isReadOnly = field.readonly;
-
-  return (
-    <div className={`border rounded-lg p-4 transition-shadow ${
-      isCustomField ? 'border-blue-300 bg-blue-50/30' : field.systemRequired ? 'border-amber-200 bg-amber-50/30' : isReadOnly ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white hover:shadow-sm'
-    }`}>
-      {/* Field Header */}
-      <div className="flex items-start gap-3 mb-3">
-        {!isReadOnly && (
-          <label className="flex items-center cursor-pointer mt-1">
-            <input
-              type="checkbox"
-              checked={field.enabled}
-              onChange={() => onToggle(field.id)}
-              disabled={field.systemRequired}
-              className="w-4 h-4 text-primary border-input rounded focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label={`Enable ${field.label} field`}
-            />
-          </label>
-        )}
-        
-        <div className="flex-1 space-y-2">
-          {/* Badges */}
-          <div className="flex items-center gap-1 mb-1 flex-wrap">
-            {isCustomField && (
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                Custom Field
-              </span>
-            )}
-            {field.systemRequired && (
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                </svg>
-                System Required
-              </span>
-            )}
-          </div>
-
-          {/* Field Label */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              Field Label {field.required && <span className="text-destructive">*</span>}
-              {isReadOnly && <span className="text-xs text-slate-500 ml-2">(Read-only)</span>}
-            </label>
-            <input
-              type="text"
-              value={field.customLabel || field.label}
-              onChange={(e) => onLabelUpdate(field.id, e.target.value)}
-              disabled={!field.enabled && !field.required && !field.systemRequired && !isReadOnly}
-              className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50 disabled:text-slate-500"
-              placeholder={field.label}
-            />
-          </div>
-
-          {/* Required Toggle */}
-          {!isReadOnly && (
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id={`required-${field.id}`}
-                checked={field.required || false}
-                onChange={() => onToggleRequired(field.id)}
-                disabled={field.systemRequired || (!field.enabled && !field.required)}
-                className="w-4 h-4 text-primary border-input rounded focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label={`Mark ${field.label} as required`}
-              />
-              <label htmlFor={`required-${field.id}`} className="text-xs font-medium text-slate-600 cursor-pointer flex items-center gap-1">
-              Required Field
-              {field.systemRequired && (
-                <svg className="w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 20 20" aria-label="System required - cannot be changed">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                </svg>
-              )}
-              </label>
-            </div>
-          )}
-
-          {/* Input Type Selector or Predefined Note */}
-          {!isReadOnly && !isPredefinedDropdown && (
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Input Type
-              </label>
-              <select
-                value={field.inputType}
-                onChange={(e) => onInputTypeUpdate(field.id, e.target.value as FieldInputType)}
-                disabled={(!field.enabled && !field.required && !field.systemRequired)}
-                className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50 disabled:text-slate-500"
-                aria-label="Field input type"
-              >
-                {availableInputTypes.map((type) => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {isPredefinedDropdown && (
-            <div className="bg-amber-50 border border-amber-200 rounded p-2">
-              <p className="text-xs text-amber-900">
-                <strong>Dropdown (predefined)</strong> - Options set from Request Types configured earlier
-              </p>
-            </div>
-          )}
-
-          {/* System Required Info */}
-          {field.systemRequired && !isReadOnly && (
-            <div className="bg-amber-50 border border-amber-200 rounded p-2">
-              <p className="text-xs text-amber-900">
-                <strong>Note:</strong> This field is required by the system and cannot be disabled or made optional. You can only change its label.
-              </p>
-            </div>
-          )}
-
-          {/* Dropdown Items Management */}
-          {showDropdownManagement && (
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-foreground">
-                  Dropdown Options
-                </label>
-                <button
-                  onClick={() => setEditingDropdownField(editingDropdownField === field.id ? null : field.id)}
-                  className="text-xs text-primary hover:text-primary/80 font-medium"
-                >
-                  {editingDropdownField === field.id ? 'Done' : 'Manage Options'}
-                </button>
-              </div>
-
-              {/* Show current options */}
-              {field.dropdownOptions && field.dropdownOptions.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {field.dropdownOptions.slice(0, editingDropdownField === field.id ? undefined : 5).map((option, index) => (
-                    <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 text-xs rounded">
-                      {option}
-                      {editingDropdownField === field.id && (
-                        <button
-                          onClick={() => onRemoveDropdownItem(field.id, option)}
-                          className="hover:text-destructive"
-                          aria-label={`Remove ${option}`}
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                  {!editingDropdownField && field.dropdownOptions.length > 5 && (
-                    <span className="text-xs text-slate-500">+{field.dropdownOptions.length - 5} more</span>
-                  )}
-                </div>
-              )}
-
-              {/* Add new option */}
-              {editingDropdownField === field.id && (
-                <div className="flex gap-2 pt-2 border-t border-slate-300">
-                  <input
-                    type="text"
-                    value={newDropdownItem}
-                    onChange={(e) => setNewDropdownItem(e.target.value)}
-                    placeholder="Add new option..."
-                    className="flex-1 px-2 py-1.5 text-xs border border-input rounded focus:outline-none focus:ring-2 focus:ring-ring"
-                    onKeyPress={(e) => e.key === 'Enter' && onAddDropdownItem(field.id)}
-                  />
-                  <button
-                    onClick={() => onAddDropdownItem(field.id)}
-                    disabled={!newDropdownItem.trim()}
-                    className="px-3 py-1.5 text-xs font-medium text-white bg-primary hover:bg-primary/90 rounded disabled:opacity-50 transition-colors"
-                  >
-                    Add
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Delete Custom Field Button */}
-        {isCustomField && onRemoveCustomField && (
-          <button
-            onClick={() => onRemoveCustomField(field.id)}
-            className="ml-auto text-destructive hover:text-destructive/80 transition-colors p-1"
-            title="Remove custom field"
-            aria-label="Remove custom field"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}

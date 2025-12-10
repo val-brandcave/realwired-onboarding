@@ -1,0 +1,13 @@
+,Property Record Workbook - Instructions
+,
+,"Hello! This workbook is designed to help you determine what fields should be modified within your system. This accounts for adding fields, removing/hiding fields, relabling them to something else, making them requried or optional, whether they should be on your new property record form, etcetera. Please see the instructions below and please reach out to the Realwired/YouConnect onboarding team if you have any questions!"
+,
+,"As a general rule of thumb, please do not clear and cells within this workbook. It is designed in a way that we can still see all of the default values of the system, but can easily see what you have changed within the form to make our changes. Each tab's instructions are slightly different, so please read each tab's individual instructions before making any changes."
+,
+,"There are 4 functional tabs within this workbook - The Property Record, Dropdown Values, Field Template Values, and Create New Fields Please see the instructions on each tab for further details on the dos and don'ts of this workbook."
+,
+1,The Property Record tab is intended to tell us how to modify the existing fields within your Property Record.
+2,"The Dropdown Values tab is intended to tell us what values should be added, removed, or relabeled to something different within the existing dropdown menus on your property record. If you are adding new dropdown fields to your property record, please follow the instructions within the tab on how to indicate these new values."
+3,"The Field Template Values tab is intended to tell us what values should be added, removed, or relabled to something different within the existing field template fields on your property record. Explanation of what a Field Template is will be on that tab."
+4,"The Create New Fields tab is intended to tell us what fields you would like to add to the system that are currently not there. Before adding any values, please fully complete the Property Record tab so we don't accidentally create duplicate fields. "
+,

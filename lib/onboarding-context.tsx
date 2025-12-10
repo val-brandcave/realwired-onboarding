@@ -83,12 +83,15 @@ export interface PropertyRecordField {
   label: string;
   customLabel?: string; // User's custom label name (overrides default label)
   category: 'overview' | 'advanced';
-  type: 'text' | 'number' | 'select' | 'textarea';
-  options?: string[]; // For select fields
-  enabled: boolean; // Whether user wants this field in their standard property record
+  type: 'text' | 'number' | 'select' | 'multiselect' | 'textarea' | 'date' | 'file' | 'readonly' | 'link' | 'email' | 'tel' | 'checkbox';
+  options?: string[]; // For select/multiselect/checkbox fields
+  enabled: boolean; // Whether user wants this field in their standard property record (visible)
   required?: boolean;
   systemRequired?: boolean; // System-required field that cannot be disabled or made optional
+  systemFixed?: boolean; // Cannot be dragged/reordered
   placeholder?: string;
+  order?: number; // For ordering within category
+  column?: 1 | 2; // Which column the field appears in
 }
 
 export interface OrderFormField {
@@ -112,13 +115,16 @@ export interface RequestFormField {
   label: string;
   customLabel?: string; // User's custom label name (overrides default label)
   category: 'overview' | 'details';
-  type: 'text' | 'number' | 'select' | 'textarea' | 'email' | 'tel' | 'date';
-  options?: string[]; // For select fields
-  enabled: boolean; // Whether user wants this field in their standard request form
+  type: 'text' | 'number' | 'select' | 'multiselect' | 'textarea' | 'date' | 'file' | 'readonly' | 'link' | 'email' | 'tel' | 'checkbox';
+  options?: string[]; // For select/multiselect/checkbox fields
+  enabled: boolean; // Whether user wants this field in their standard request form (visible to field officer)
   required?: boolean;
   systemRequired?: boolean; // System-required field that cannot be disabled or made optional
+  systemFixed?: boolean; // Cannot be dragged/reordered
   placeholder?: string;
   readonly?: boolean; // For overview fields that shouldn't be edited
+  order?: number; // For ordering within category
+  column?: 1 | 2; // Which column the field appears in
 }
 
 export interface PropertyCategory {
@@ -596,60 +602,118 @@ const initialState: OnboardingState = {
       { id: 'land', category: 'Land', types: ['Vacant', 'Agricultural'] },
     ],
     propertyRecordFields: [
-      // Overview Section
-      { id: 'street-address', label: 'Street Address', category: 'overview', type: 'text', enabled: true, required: true, systemRequired: true, placeholder: '123 Main Street' },
-      { id: 'apt-unit', label: 'Apt/Unit Number', category: 'overview', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'Unit 4B' },
-      { id: 'city', label: 'City', category: 'overview', type: 'text', enabled: true, required: true, systemRequired: true, placeholder: 'Springfield' },
-      { id: 'state', label: 'State', category: 'overview', type: 'select', enabled: true, required: true, systemRequired: true, options: ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'] },
-      { id: 'zip-code', label: 'ZIP Code', category: 'overview', type: 'text', enabled: true, required: true, systemRequired: true, placeholder: '12345' },
-      { id: 'county', label: 'County', category: 'overview', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'County Name' },
-      { id: 'legal-description', label: 'Legal Description', category: 'overview', type: 'textarea', enabled: false, required: false, systemRequired: false, placeholder: 'Full legal description of property' },
-      { id: 'parcel-id', label: 'Parcel/Tax ID', category: 'overview', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'APN-123-456-789' },
+      // Primary Property Information (System-level fields)
+      { id: 'street-address', label: 'Street Address', category: 'overview', type: 'text', enabled: true, required: true, systemRequired: true, systemFixed: true, placeholder: '123 Main Street', order: 0, column: 1 },
+      { id: 'apt-unit', label: 'Apt/Unit Number', category: 'overview', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'Unit 4B', order: 1, column: 1 },
+      { id: 'city', label: 'City', category: 'overview', type: 'text', enabled: true, required: true, systemRequired: true, systemFixed: true, placeholder: 'Springfield', order: 2, column: 1 },
+      { id: 'state', label: 'State', category: 'overview', type: 'select', enabled: true, required: true, systemRequired: true, systemFixed: true, options: ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'], order: 3, column: 1 },
+      { id: 'zip-code', label: 'ZIP Code', category: 'overview', type: 'text', enabled: true, required: true, systemRequired: true, systemFixed: true, placeholder: '12345', order: 4, column: 1 },
+      { id: 'county', label: 'County', category: 'overview', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'County Name', order: 5, column: 1 },
+      { id: 'portfolio', label: 'Portfolio', category: 'overview', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Property group name', order: 6, column: 1 },
+      { id: 'portfolio-description', label: 'Portfolio Description', category: 'overview', type: 'textarea', enabled: false, required: false, systemRequired: false, placeholder: 'Description of the portfolio', order: 7, column: 1 },
       
-      // Advanced Details Section
-      { id: 'property-category', label: 'Property Category', category: 'advanced', type: 'select', enabled: true, required: true, systemRequired: true, options: ['Residential', 'Commercial', 'Industrial', 'Agricultural', 'Mixed-Use', 'Special Purpose'] },
-      { id: 'property-type', label: 'Property Type', category: 'advanced', type: 'select', enabled: true, required: true, systemRequired: true, options: ['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Office', 'Retail', 'Industrial', 'Warehouse', 'Land'] },
-      { id: 'year-built', label: 'Year Built', category: 'advanced', type: 'number', enabled: true, required: false, systemRequired: false, placeholder: '1995' },
-      { id: 'square-footage', label: 'Square Footage', category: 'advanced', type: 'number', enabled: true, required: false, systemRequired: false, placeholder: '2500' },
-      { id: 'lot-size', label: 'Lot Size (acres)', category: 'advanced', type: 'number', enabled: false, required: false, systemRequired: false, placeholder: '0.25' },
-      { id: 'bedrooms', label: 'Bedrooms', category: 'advanced', type: 'number', enabled: true, required: false, systemRequired: false, placeholder: '3' },
-      { id: 'bathrooms', label: 'Bathrooms', category: 'advanced', type: 'number', enabled: true, required: false, systemRequired: false, placeholder: '2.5' },
-      { id: 'flood-zone', label: 'Flood Zone', category: 'advanced', type: 'select', enabled: true, required: false, systemRequired: false, options: ['Zone A', 'Zone AE', 'Zone AH', 'Zone AO', 'Zone V', 'Zone VE', 'Zone X (Shaded)', 'Zone X (Unshaded)', 'Zone D', 'Not in Flood Zone'] },
-      { id: 'zoning', label: 'Zoning Classification', category: 'advanced', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'R-1 Residential' },
-      { id: 'occupancy-status', label: 'Occupancy Status', category: 'advanced', type: 'select', enabled: true, required: false, systemRequired: false, options: ['Owner Occupied', 'Tenant Occupied', 'Vacant', 'Under Construction'] },
-      { id: 'assessed-value', label: 'Assessed Value', category: 'advanced', type: 'number', enabled: false, required: false, systemRequired: false, placeholder: '350000' },
-      { id: 'hoa-applicable', label: 'HOA Applicable', category: 'advanced', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Yes', 'No'] },
-      { id: 'special-assessments', label: 'Special Assessments', category: 'advanced', type: 'textarea', enabled: false, required: false, systemRequired: false, placeholder: 'Any special assessments or liens' },
-      { id: 'environmental-concerns', label: 'Environmental Concerns', category: 'advanced', type: 'textarea', enabled: false, required: false, systemRequired: false, placeholder: 'Known environmental issues or hazards' },
-      { id: 'additional-notes', label: 'Additional Property Notes', category: 'advanced', type: 'textarea', enabled: true, required: false, systemRequired: false, placeholder: 'Any additional property details or special instructions' },
+      // Property Overview Section
+      { id: 'property-category', label: 'Property Category', category: 'advanced', type: 'select', enabled: true, required: true, systemRequired: true, systemFixed: true, options: ['Residential', 'Commercial', 'Industrial', 'Agricultural', 'Mixed-Use', 'Special Purpose'], order: 0, column: 1 },
+      { id: 'property-type', label: 'Property Type', category: 'advanced', type: 'select', enabled: true, required: true, systemRequired: true, systemFixed: true, options: ['Single Family', 'Condo', 'Townhouse', 'Multi-Family', 'Office', 'Retail', 'Industrial', 'Warehouse', 'Land'], order: 1, column: 1 },
+      { id: 'assigned-area', label: 'Assigned Area', category: 'advanced', type: 'select', enabled: true, required: true, systemRequired: false, options: [], placeholder: 'For routing', order: 2, column: 1 },
+      { id: 'bank', label: 'Bank', category: 'advanced', type: 'readonly', enabled: true, required: true, systemRequired: true, placeholder: 'Auto-generated', order: 3, column: 1 },
+      { id: 'lot-number', label: 'Lot #', category: 'advanced', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Lot number', order: 4, column: 1 },
+      { id: 'block', label: 'Block', category: 'advanced', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Block number', order: 5, column: 1 },
+      { id: 'subdivision', label: 'Subdivision', category: 'advanced', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Subdivision name', order: 6, column: 1 },
+      { id: 'parcel-id', label: 'Parcel #', category: 'advanced', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'APN-123-456-789', order: 7, column: 1 },
+      { id: 'str', label: 'STR', category: 'advanced', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Section Township Range', order: 8, column: 1 },
+      { id: 'year-built', label: 'Year Built', category: 'advanced', type: 'number', enabled: true, required: false, systemRequired: false, placeholder: '1995', order: 9, column: 1 },
+      { id: 'site-area', label: 'Site Area', category: 'advanced', type: 'number', enabled: true, required: true, systemRequired: false, placeholder: '0.25', order: 10, column: 1 },
+      { id: 'site-area-unit', label: 'Site Area Unit of Measure', category: 'advanced', type: 'select', enabled: true, required: false, systemRequired: false, options: ['SF', 'Acres', 'Units'], order: 11, column: 1 },
+      { id: 'excess-land', label: 'Excess Land', category: 'advanced', type: 'number', enabled: false, required: false, systemRequired: false, placeholder: '0', order: 12, column: 1 },
+      { id: 'excess-land-unit', label: 'Excess Land Unit of Measure', category: 'advanced', type: 'select', enabled: false, required: false, systemRequired: false, options: ['SF', 'Acres', 'Units'], order: 13, column: 1 },
+      { id: 'building-size', label: 'Building Size', category: 'advanced', type: 'number', enabled: true, required: true, systemRequired: false, placeholder: '2500', order: 14, column: 2 },
+      { id: 'building-size-unit', label: 'Building Size Unit of Measure', category: 'advanced', type: 'select', enabled: true, required: false, systemRequired: false, options: ['SF', 'Units'], order: 15, column: 2 },
+      { id: 'number-of-tenants', label: 'Number of Tenants', category: 'advanced', type: 'number', enabled: false, required: false, systemRequired: false, placeholder: '0', order: 16, column: 2 },
+      { id: 'ownership-type', label: 'Ownership Type', category: 'advanced', type: 'select', enabled: true, required: false, systemRequired: false, options: ['Owner Occupied', 'Owner Occupied & Leased', 'Leased', 'Ground Leased', 'Leasehold (Borrower is tenant)'], order: 17, column: 2 },
+      { id: 'owner', label: 'Owner', category: 'advanced', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Owner name', order: 18, column: 2 },
+      { id: 'flood-zone', label: 'Flood Zone', category: 'advanced', type: 'select', enabled: true, required: false, systemRequired: false, options: ['Zone A', 'Zone AE', 'Zone AH', 'Zone AO', 'Zone V', 'Zone VE', 'Zone X (Shaded)', 'Zone X (Unshaded)', 'Zone D', 'Not in Flood Zone'], order: 19, column: 2 },
+      { id: 'property-status', label: 'Property Status', category: 'advanced', type: 'select', enabled: true, required: false, systemRequired: false, options: ['Existing', 'Under Construction', 'Renovation', 'Proposed'], order: 20, column: 2 },
+      { id: 'reg-b-dwelling', label: 'Is there a 1-4 family residential dwelling on the property?', category: 'advanced', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Yes', 'No'], order: 21, column: 2 },
+      { id: 'reg-b-first-mortgage', label: 'Is this a first mortgage on property?', category: 'advanced', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Yes', 'No'], order: 22, column: 2 },
+      { id: 'legal-description', label: 'Legal Description', category: 'advanced', type: 'textarea', enabled: false, required: false, systemRequired: false, placeholder: 'Full legal description of property', order: 23, column: 2 },
+      { id: 'property-comments', label: 'Property Comments', category: 'advanced', type: 'textarea', enabled: true, required: true, systemRequired: false, placeholder: 'Any property-specific notes', order: 24, column: 2 },
+      { id: 'multiple-building-description', label: 'Multiple Building Description', category: 'advanced', type: 'textarea', enabled: false, required: false, systemRequired: false, placeholder: 'Describe additional buildings', order: 25, column: 2 },
+      { id: 'active', label: 'Active', category: 'advanced', type: 'readonly', enabled: true, required: false, systemRequired: false, placeholder: 'Auto-generated', order: 26, column: 2 },
+      { id: 'photo', label: 'Photo', category: 'advanced', type: 'file', enabled: false, required: false, systemRequired: false, order: 27, column: 2 },
+      { id: 'latitude', label: 'Latitude', category: 'advanced', type: 'readonly', enabled: true, required: false, systemRequired: true, placeholder: 'Auto-generated', order: 28, column: 2 },
+      { id: 'longitude', label: 'Longitude', category: 'advanced', type: 'readonly', enabled: true, required: false, systemRequired: true, placeholder: 'Auto-generated', order: 29, column: 2 },
+      
+      // Legacy fields (keeping for now)
+      { id: 'bedrooms', label: 'Bedrooms', category: 'advanced', type: 'number', enabled: true, required: false, systemRequired: false, placeholder: '3', order: 30, column: 2 },
+      { id: 'bathrooms', label: 'Bathrooms', category: 'advanced', type: 'number', enabled: true, required: false, systemRequired: false, placeholder: '2.5', order: 31, column: 2 },
+      { id: 'zoning', label: 'Zoning Classification', category: 'advanced', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'R-1 Residential', order: 32, column: 2 },
+      { id: 'assessed-value', label: 'Assessed Value', category: 'advanced', type: 'number', enabled: false, required: false, systemRequired: false, placeholder: '350000', order: 33, column: 2 },
+      { id: 'hoa-applicable', label: 'HOA Applicable', category: 'advanced', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Yes', 'No'], order: 34, column: 2 },
+      { id: 'special-assessments', label: 'Special Assessments', category: 'advanced', type: 'textarea', enabled: false, required: false, systemRequired: false, placeholder: 'Any special assessments or liens', order: 35, column: 2 },
+      { id: 'environmental-concerns', label: 'Environmental Concerns', category: 'advanced', type: 'textarea', enabled: false, required: false, systemRequired: false, placeholder: 'Known environmental issues or hazards', order: 36, column: 2 },
+      { id: 'additional-notes', label: 'Additional Property Notes', category: 'advanced', type: 'textarea', enabled: true, required: false, systemRequired: false, placeholder: 'Any additional property details or special instructions', order: 37, column: 2 },
     ],
     selectedSamplePropertyId: undefined,
     requestFormFields: [
-      // Overview Section (readonly fields showing context)
-      { id: 'request-type', label: 'Request Type', category: 'overview', type: 'text', enabled: true, required: true, systemRequired: true, readonly: true },
-      { id: 'property-address', label: 'Property Address', category: 'overview', type: 'text', enabled: true, required: true, systemRequired: true, readonly: true },
+      // REQUEST INFO PANEL - Put in 'details' category to show up
+      { id: 'file-number', label: 'File Number', category: 'overview', type: 'readonly', enabled: true, required: true, systemRequired: true, readonly: true, placeholder: 'Auto-generated', order: 0, column: 1 },
+      { id: 'project-number', label: 'Project Number', category: 'overview', type: 'readonly', enabled: true, required: true, systemRequired: true, readonly: true, placeholder: 'Auto-generated', order: 1, column: 1 },
+      { id: 'request-status', label: 'Request Status', category: 'overview', type: 'readonly', enabled: true, required: true, systemRequired: true, readonly: true, placeholder: 'Auto-generated', order: 2, column: 2 },
+      { id: 'workflow-stage', label: 'Workflow Stage', category: 'overview', type: 'readonly', enabled: true, required: true, systemRequired: true, readonly: true, placeholder: 'Auto-generated', order: 3, column: 2 },
       
-      // Details Section (configurable fields)
-      { id: 'request-purpose', label: 'Request Purpose', category: 'details', type: 'select', enabled: true, required: true, systemRequired: false, options: ['Purchase', 'Refinance', 'Cash-out Refinance', 'Home Equity', 'Construction', 'Other'], placeholder: 'Select purpose' },
-      { id: 'loan-officer', label: 'Loan Officer', category: 'details', type: 'text', enabled: true, required: true, systemRequired: true, placeholder: 'Officer name' },
-      { id: 'customer-name', label: 'Customer/Borrower Name', category: 'details', type: 'text', enabled: true, required: true, systemRequired: true, placeholder: 'Full legal name' },
-      { id: 'borrower-email', label: 'Borrower Email', category: 'details', type: 'email', enabled: true, required: false, systemRequired: false, placeholder: 'borrower@example.com' },
-      { id: 'borrower-phone', label: 'Borrower Phone', category: 'details', type: 'tel', enabled: true, required: false, systemRequired: false, placeholder: '(555) 123-4567' },
-      { id: 'coborrower-name', label: 'Co-Borrower Name', category: 'details', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Co-borrower full name' },
-      { id: 'loan-amount', label: 'Loan Amount', category: 'details', type: 'number', enabled: true, required: true, systemRequired: true, placeholder: '250000' },
-      { id: 'ltv-ratio', label: 'Loan-to-Value (LTV) Ratio', category: 'details', type: 'number', enabled: true, required: false, systemRequired: false, placeholder: '80' },
-      { id: 'loan-type', label: 'Loan Type', category: 'details', type: 'select', enabled: true, required: true, systemRequired: false, options: ['Conventional 30-Year Fixed', 'Conventional 15-Year Fixed', 'FHA 30-Year Fixed', 'VA Loan', 'USDA Loan', 'Jumbo Loan', 'ARM 5/1', 'ARM 7/1', 'Commercial Real Estate Loan', 'Agricultural Loan', 'Other'], placeholder: 'Select loan type' },
-      { id: 'appraisal-type', label: 'Appraisal Type', category: 'details', type: 'select', enabled: true, required: false, systemRequired: false, options: ['1004 Full Appraisal', '1025 Small Residential Income', '1073 Condo Appraisal', '2055 Exterior Only', 'Commercial Narrative Report', 'Phase I Environmental Site Assessment', 'Desk Review', 'Other'], placeholder: 'Select appraisal type' },
-      { id: 'turn-time', label: 'Turn Time', category: 'details', type: 'select', enabled: true, required: true, systemRequired: false, options: ['3 Business Days', '5 Business Days', '7 Business Days', '10 Business Days', '14 Business Days', '21 Business Days'], placeholder: 'Select timeline' },
-      { id: 'ordering-party', label: 'Ordering Party', category: 'details', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'Bank or institution name' },
-      { id: 'order-date', label: 'Order Date', category: 'details', type: 'date', enabled: true, required: true, systemRequired: true },
-      { id: 'due-date', label: 'Due Date', category: 'details', type: 'date', enabled: true, required: true, systemRequired: true },
-      { id: 'rush-order', label: 'Rush Order', category: 'details', type: 'select', enabled: true, required: false, systemRequired: false, options: ['Yes', 'No'] },
-      { id: 'client-file-number', label: 'Client File Number', category: 'details', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'Internal file reference' },
-      { id: 'loan-number', label: 'Loan Number', category: 'details', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'Loan reference number' },
-      { id: 'sales-price', label: 'Sales/Purchase Price', category: 'details', type: 'number', enabled: true, required: false, systemRequired: false, placeholder: '350000' },
-      { id: 'refinance-purpose', label: 'Refinance Purpose', category: 'details', type: 'textarea', enabled: false, required: false, systemRequired: false, placeholder: 'Describe refinance purpose if applicable' },
-      { id: 'special-instructions', label: 'Special Instructions', category: 'details', type: 'textarea', enabled: true, required: false, systemRequired: false, placeholder: 'Any special requirements or notes for the appraiser' },
+      // Core Request Fields - Details category
+      { id: 'request-type', label: 'Request Type', category: 'details', type: 'select', enabled: true, required: true, systemRequired: true, options: [], order: 0, column: 1 },
+      { id: 'request-purpose', label: 'Request Purpose', category: 'details', type: 'select', enabled: true, required: true, systemRequired: false, options: ['Additional Collateral', 'Additional Funding', 'Classified Asset', 'Construction Inspection', 'Construction (w/perm in secondary mkt.)', 'Construction (w/perm in-house)', 'External Property Inspection', 'Foreclosure', 'Final Inspection', 'New Loan', 'New loan (secondary market)', 'OREO Asset', 'Loan Renewal (new funds)', 'Loan Renewal (no new funds)'], order: 1, column: 1 },
+      { id: 'customer-name', label: 'Customer Name', category: 'details', type: 'text', enabled: true, required: true, systemRequired: true, placeholder: 'Customer/Borrower name', order: 2, column: 1 },
+      { id: 'ordering-choices', label: 'Ordering Choices', category: 'details', type: 'select', enabled: true, required: true, systemRequired: false, options: ['Engage at Discretion', 'Obtain Bids - Engage Lowest', 'Obtain Bids - Notify Account Officer', 'ObtainBids-PrePymt Req-NotifyBorrower'], order: 3, column: 1 },
+      { id: 'loan-officer', label: 'Loan Officer', category: 'details', type: 'text', enabled: true, required: true, systemRequired: true, placeholder: 'Loan Officer name', order: 4, column: 1 },
+      { id: 'lo-notifications-copy', label: 'LO Notifications Copy', category: 'details', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Additional notification recipients', order: 5, column: 1 },
+      { id: 'date-needed', label: 'Date Needed', category: 'details', type: 'date', enabled: true, required: true, systemRequired: true, order: 6, column: 1 },
+      { id: 'projected-close-date', label: 'Projected Close Date', category: 'details', type: 'date', enabled: true, required: true, systemRequired: false, order: 7, column: 1 },
+      { id: 'loan-amount', label: 'Loan Amount', category: 'details', type: 'number', enabled: true, required: true, systemRequired: true, placeholder: '250000', order: 8, column: 1 },
+      { id: 'loan-type', label: 'Loan Type', category: 'details', type: 'select', enabled: true, required: true, systemRequired: false, options: ['Business', 'Real Estate', 'Residence'], order: 9, column: 1 },
+      { id: 'loan-number', label: 'Loan #', category: 'details', type: 'text', enabled: true, required: true, systemRequired: false, placeholder: 'Loan number', order: 10, column: 1 },
+      { id: 'prior-loan-number', label: 'Prior Loan #', category: 'details', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Prior loan number', order: 11, column: 1 },
+      { id: 'ltv-ratio', label: 'LTV Ratio', category: 'details', type: 'number', enabled: true, required: false, systemRequired: false, placeholder: '80', order: 12, column: 1 },
+      { id: 'approved-ltv-ratio', label: 'Approved LTV Ratio', category: 'details', type: 'number', enabled: false, required: false, systemRequired: false, placeholder: '80', order: 13, column: 1 },
+      { id: 'risk-rating', label: 'Risk Rating', category: 'details', type: 'text', enabled: true, required: true, systemRequired: false, placeholder: 'Risk rating', order: 14, column: 1 },
+      { id: 'risk-grade', label: 'Risk Grade', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: [], order: 15, column: 1 },
+      { id: 'prior-appraisal-date', label: 'Prior Appraisal Date', category: 'details', type: 'date', enabled: false, required: false, systemRequired: false, order: 16, column: 1 },
+      { id: 'prior-appraised-value', label: 'Prior Appraised Value', category: 'details', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Auto-populates', order: 17, column: 1 },
+      { id: 'billing-branch-code', label: 'Billing/Branch Code', category: 'details', type: 'text', enabled: true, required: true, systemRequired: false, placeholder: 'Can auto-populate from LO', order: 18, column: 2 },
+      { id: 'gl-acct', label: 'GL Acct', category: 'details', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Can auto-populate from LO', order: 19, column: 2 },
+      { id: 'lending-group', label: 'Lending Group', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: [], order: 20, column: 2 },
+      { id: 'payment-method', label: 'Payment Method', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Rolled into Loan', 'Customer Will Pay', 'Bank Will Pay'], order: 21, column: 2 },
+      { id: 'prepayment-proof', label: 'Prepayment Proof', category: 'details', type: 'file', enabled: false, required: false, systemRequired: false, order: 22, column: 2 },
+      { id: 'sba-involvement', label: 'SBA Involvement', category: 'details', type: 'select', enabled: true, required: false, systemRequired: false, options: ['Yes', 'No'], order: 23, column: 2 },
+      { id: 'involvement-type', label: 'Involvement Type', category: 'details', type: 'select', enabled: true, required: false, systemRequired: false, options: ['7A', '504C'], order: 24, column: 2 },
+      { id: 'local-lending-partner', label: 'Local Lending Partner', category: 'details', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'Partner name', order: 25, column: 2 },
+      { id: 'lending-partner-address', label: 'Lending Partner Address', category: 'details', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'Partner address', order: 26, column: 2 },
+      { id: 'syndication-participation', label: 'Syndication / Participation', category: 'details', type: 'select', enabled: true, required: false, systemRequired: false, options: ['Yes', 'No', 'Unknown'], order: 27, column: 2 },
+      { id: 'is-bank-agent-bank', label: 'Is Bank the Agent Bank', category: 'details', type: 'select', enabled: true, required: false, systemRequired: false, options: ['Yes', 'No'], order: 28, column: 2 },
+      { id: 'agent-bank', label: 'Agent Bank', category: 'details', type: 'text', enabled: true, required: false, systemRequired: false, placeholder: 'Agent bank name', order: 29, column: 2 },
+      { id: 'hpml', label: 'HPML', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Yes', 'No'], order: 30, column: 2 },
+      { id: 'request-comments', label: 'Request Comments', category: 'details', type: 'textarea', enabled: true, required: false, systemRequired: false, placeholder: 'Communication between LO and JM', order: 31, column: 2 },
+      { id: 'job-manager', label: 'Job Manager', category: 'details', type: 'text', enabled: true, required: true, systemRequired: true, placeholder: 'Job Manager', order: 32, column: 2 },
+      { id: 'jm-notifications-copy', label: 'JM Notifications Copy', category: 'details', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Additional JM notifications', order: 33, column: 2 },
+      { id: 'on-hold', label: 'On Hold', category: 'details', type: 'select', enabled: true, required: false, systemRequired: true, options: ['Yes', 'No'], order: 34, column: 2 },
+      
+      // Contact/Access Fields - put in details
+      { id: 'marketing-status', label: 'Marketing Status', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: ['For Sale', 'Under Contract', 'Not on the Market', 'Recently Sold'], order: 35, column: 2 },
+      { id: 'listing-agent', label: 'Listing Agent', category: 'details', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Agent name', order: 36, column: 2 },
+      { id: 'listing-phone', label: 'Listing Phone', category: 'details', type: 'tel', enabled: false, required: false, systemRequired: false, placeholder: '(555) 123-4567', order: 37, column: 2 },
+      { id: 'contact-type', label: 'Contact Type', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Borrower', 'Property Manager', 'Seller', 'Tenant'], order: 38, column: 2 },
+      { id: 'contact-name', label: 'Contact Name', category: 'details', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Contact name', order: 39, column: 2 },
+      { id: 'contact-phone', label: 'Contact Phone', category: 'details', type: 'tel', enabled: false, required: false, systemRequired: false, placeholder: '(555) 123-4567', order: 40, column: 2 },
+      { id: 'contact-email', label: 'Contact Email', category: 'details', type: 'email', enabled: false, required: false, systemRequired: false, placeholder: 'contact@example.com', order: 41, column: 2 },
+      
+      // Bid/Engagement Fields - put in details  
+      { id: 'desired-delivery-date', label: 'Desired Delivery Date', category: 'details', type: 'date', enabled: false, required: false, systemRequired: false, order: 42, column: 2 },
+      { id: 'is-rush-job', label: 'Is Rush Job?', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Yes', 'No'], order: 43, column: 2 },
+      { id: 'residential-forms', label: 'Residential Forms', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: ['1004C', '1025 Form - Multifamily', '2055 Form - Drive By', '2055 Form - Inspection', 'Condo Form - 1073 (Interior)', 'URAR Form', 'URAR with Rental Income Information'], order: 44, column: 2 },
+      { id: 'report-format', label: 'Report Format', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Appraisal Report', 'Restricted Appraisal Report', 'Evaluation', 'In-House Evaluation'], order: 45, column: 2 },
+      { id: 'inspection-requirements', label: 'Inspection Requirements', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Full Inspection', 'Exterior Only Minimally Required', 'Drive By'], order: 46, column: 2 },
     ],
     selectedSampleRequestId: undefined,
     orderFormFields: [

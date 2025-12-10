@@ -1,0 +1,70 @@
+Field Templates - Instructions,,,,,,,
+,,,,,,,
+"Field Templates are a type of field that allows you to create pre-saved blocks of commonly used, reusable text. This information is commonly used to bring information into engagement letters or bid letters that might change from request to request.",,,,,,,
+Please highlight values you would like to remove in RED,,,,,,,
+Please highlight values you would like to add in GREEN,,,,,,,
+Please BOLD values you would like to set as defaults,,,,,,,
+"If adding a new field template, please add the name of the new Field Template field in the existing columns (Column C and onward) and provide the name of each option below it along with the content in the paried column. ",,,,,,,
+Please add another set of columns to capture any additional field templates beyond the 3 additional options listed.,,,,,,,
+,,,,,,,
+,,,,,,,
+Multiple Building Description,Multiple Building Description - Content,N/A,N/A - Content,N/A,N/A - Content,N/A,N/A - Content
+(See Values),(See Values),(See Values),(See Values),(See Values),(See Values),(See Values),(See Values)
+1 Building,"Building 1
+Sq. Footage:
+Year Built:
+Existing (yes/no):
+Proposed (yes/no):
+Add and/or Renovation (yes/no):",No preseet values for this field template,No preseet values for this field template,No preseet values for this field template,No preseet values for this field template,No preseet values for this field template,No preseet values for this field template
+2 Buildings,"Building 1
+Sq. Footage:
+Year Built:
+Existing (yes/no):
+Proposed (yes/no):
+Add and/or Renovation (yes/no):
+
+Building 2
+Sq. Footage:
+Year Built:
+Existing (yes/no):
+Proposed (yes/no):
+Add and/or Renovation (yes/no):",,,,,,
+3 Buildings,"Building 1
+Sq. Footage:
+Year Built:
+Existing (yes/no):
+Proposed (yes/no):
+Add and/or Renovation (yes/no):
+
+Building 2
+Sq. Footage:
+Year Built:
+Existing (yes/no):
+Proposed (yes/no):
+Add and/or Renovation (yes/no):
+
+Building 3
+Sq. Footage:
+Year Built:
+Existing (yes/no):
+Proposed (yes/no):
+Add and/or Renovation (yes/no):",,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,

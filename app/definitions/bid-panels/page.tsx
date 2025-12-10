@@ -4,20 +4,26 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useOnboarding } from "@/lib/onboarding-context";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { DraggableField } from "@/components/property-config/DraggableField";
+import { FieldSettingsDrawer } from "@/components/property-config/FieldSettingsDrawer";
+import { AddFieldModal } from "@/components/property-config/AddFieldModal";
+import type { FieldInputType } from "@/components/property-config/AddFieldModal";
 
 type BidPanelType = '3-column' | '4-column' | 'checkboxes' | 'dropdowns';
-type FieldInputType = 'text' | 'textarea' | 'select' | 'number' | 'date';
 
 interface BidPanelField {
   id: string;
   label: string;
   enabled: boolean;
   required: boolean;
-  systemRequired?: boolean; // Cannot be changed by user
+  systemRequired?: boolean;
+  systemFixed?: boolean;
   readonly: boolean;
   customLabel?: string;
-  inputType?: FieldInputType;
-  dropdownOptions?: string[];
+  type: 'text' | 'textarea' | 'select' | 'multiselect' | 'number' | 'date' | 'file' | 'readonly' | 'checkbox';
+  options?: string[];
+  order?: number;
+  column?: 1 | 2;
 }
 
 // Dropdown options extracted from screenshots
@@ -36,51 +42,23 @@ const DROPDOWN_OPTIONS = {
     '1025 Form - Multifamily',
     '1025 Single-family, Duplex, Small Residential Income Producing Property',
     '2055 Form - Drive By',
-    '2055 Form - Drive By w/Land Value',
-    '2055 Form - Drive By w/Land Value',
     '2055 Form - Inspection',
-    '2055 Form - Inspection w/GRM',
-    '2055 Form - Inspection w/Land Value',
     'Condo Form - 1073 (Interior)',
-    'Condo Form - 1075 (Exterior)',
-    'Desktop Detai led',
-    'Land Form',
-    'Market Conditions Addendum',
-    'URAR + MC Form',
-    'URAR + Suppl. REO Add.',
-    'URAR 1004D (Form 442)',
     'URAR Form',
     'URAR with Rental Income Information'
   ],
-  'market-analysis-level': [
-    'Market Condition Addendum',
-    'N/A'
-  ],
+  'market-analysis-level': ['Market Condition Addendum', 'N/A'],
   'value-premise': [
     'Market Value - As Is',
     'Market Value - Hypothetical',
-    'Market Value - Retrospective',
     'Prospective Market Value - At Completion',
-    'Prospective Market Value - At Completion/Stabilization',
-    'Prospective Market Value - At Stabilization',
-    'Monthly Home Absorption',
-    'Going Concern',
-    'Insurable Value',
-    'Liquidation Value'
+    'Prospective Market Value - At Stabilization'
   ],
-  'value-qualifier': [
-    'As Is',
-    'As Completed',
-    'As Stabilized'
-  ],
-  'interest-appraised': [
-    'Fee Simple',
-    'Leased Fee',
-    'Leasehold'
-  ],
+  'value-qualifier': ['As Is', 'As Completed', 'As Stabilized'],
+  'interest-appraised': ['Fee Simple', 'Leased Fee', 'Leasehold'],
   'inspection-requirements': [
     'Full Inspection',
-    'Exterior Only Inspection Minimally Required',
+    'Exterior Only Minimally Required',
     'Exterior Only DO NOT CONTACT BORROWER',
     'Drive By'
   ],
@@ -89,29 +67,6 @@ const DROPDOWN_OPTIONS = {
     'Cost Approach',
     'Income Capitalization',
     'All Applicable Approaches'
-  ],
-  'valuation-types': [
-    'None',
-    'Leased Fee (leased, all or part)',
-    'Fee Simple',
-    'Leasehold'
-  ],
-  'premise-valued': [
-    'Fee Simple',
-    'Leased Fee',
-    'Leasehold'
-  ],
-  'value-type': [
-    'As Is',
-    'As Stabilized',
-    'As Completed',
-    'Bulk Sale Market Value',
-    'Retrospective Value'
-  ],
-  'value-date-type': [
-    'Current',
-    'Retrospective',
-    'Prospective'
   ],
   'intended-use-environmental': [
     'Conventional Loan Underwriting',
@@ -124,57 +79,60 @@ export default function BidPanelsPage() {
   const { state, updateDefinitions, updateModuleProgress } = useOnboarding();
   const router = useRouter();
   
-  // Track progress when user lands on this step
   useEffect(() => {
-    updateModuleProgress('definitions', 5, 5); // Step 5 of 5 - 100%
+    updateModuleProgress('definitions', 5, 5);
   }, [updateModuleProgress]);
 
   const [selectedBidTemplate, setSelectedBidTemplate] = useState<BidPanelType>('3-column');
   const [useEnvironmental, setUseEnvironmental] = useState(true);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [selectedPanelType, setSelectedPanelType] = useState<'appraisal' | 'environmental'>('appraisal');
+  const [draggingFieldId, setDraggingFieldId] = useState<string | null>(null);
+  const [isAddFieldModalOpen, setIsAddFieldModalOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageZoom, setImageZoom] = useState(1);
 
-  // Fields for each appraisal panel option based on screenshots
-  // Note: Report Format and Residential Forms (where applicable) are system-required
+  // Initialize appraisal fields based on template
   const getAppraisalPanelFields = (templateType: BidPanelType): BidPanelField[] => {
-    const baseFields = {
+    const baseFields: Record<BidPanelType, BidPanelField[]> = {
       '3-column': [
-        { id: 'report-format', label: 'Report Format', enabled: true, required: true, systemRequired: true, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['report-format'] },
-        { id: 'value-premise', label: 'Value Premise', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['value-premise'] },
-        { id: 'value-qualifier', label: 'Value Qualifier', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['value-qualifier'] },
-        { id: 'inspection-requirements', label: 'Inspection Requirements', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['inspection-requirements'] },
-        { id: 'approach-to-value', label: 'Approach To Value', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['approach-to-value'] },
-        { id: 'internal-appraisal', label: 'Internal Appraisal', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'text' as FieldInputType },
-        { id: 'comments', label: 'Comments', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'textarea' as FieldInputType },
+        { id: 'report-format', label: 'Report Format', enabled: true, required: true, systemRequired: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['report-format'], order: 0, column: 1 },
+        { id: 'value-premise', label: 'Value Premise', enabled: true, required: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['value-premise'], order: 1, column: 1 },
+        { id: 'value-qualifier', label: 'Value Qualifier', enabled: true, required: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['value-qualifier'], order: 2, column: 1 },
+        { id: 'inspection-requirements', label: 'Inspection Requirements', enabled: true, required: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['inspection-requirements'], order: 3, column: 1 },
+        { id: 'approach-to-value', label: 'Approach To Value', enabled: true, required: true, readonly: false, type: 'checkbox', options: DROPDOWN_OPTIONS['approach-to-value'], order: 0, column: 2 },
+        { id: 'internal-appraisal', label: 'Internal Appraisal', enabled: true, required: false, readonly: false, type: 'text', order: 1, column: 2 },
+        { id: 'comments', label: 'Comments', enabled: true, required: false, readonly: false, type: 'textarea', order: 2, column: 2 },
       ],
       '4-column': [
-        { id: 'report-format', label: 'Report Format', enabled: true, required: true, systemRequired: true, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['report-format'] },
-        { id: 'residential-forms', label: 'Residential Forms', enabled: true, required: true, systemRequired: true, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['residential-forms'] },
-        { id: 'market-analysis-level', label: 'Market Analysis Level', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['market-analysis-level'] },
-        { id: 'value-premise', label: 'Value Premise', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['value-premise'] },
-        { id: 'value-qualifier', label: 'Value Qualifier', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['value-qualifier'] },
-        { id: 'interest-appraised', label: 'Interest Appraised', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['interest-appraised'] },
-        { id: 'inspection-requirements', label: 'Inspection Requirements', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['inspection-requirements'] },
-        { id: 'approach-to-value', label: 'Approach To Value', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['approach-to-value'] },
-        { id: 'comments', label: 'Comments', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'textarea' as FieldInputType },
+        { id: 'report-format', label: 'Report Format', enabled: true, required: true, systemRequired: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['report-format'], order: 0, column: 1 },
+        { id: 'residential-forms', label: 'Residential Forms', enabled: true, required: true, systemRequired: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['residential-forms'], order: 1, column: 1 },
+        { id: 'market-analysis-level', label: 'Market Analysis Level', enabled: true, required: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['market-analysis-level'], order: 2, column: 1 },
+        { id: 'value-premise', label: 'Value Premise', enabled: true, required: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['value-premise'], order: 3, column: 1 },
+        { id: 'value-qualifier', label: 'Value Qualifier', enabled: true, required: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['value-qualifier'], order: 0, column: 2 },
+        { id: 'interest-appraised', label: 'Interest Appraised', enabled: true, required: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['interest-appraised'], order: 1, column: 2 },
+        { id: 'inspection-requirements', label: 'Inspection Requirements', enabled: true, required: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['inspection-requirements'], order: 2, column: 2 },
+        { id: 'approach-to-value', label: 'Approach To Value', enabled: true, required: true, readonly: false, type: 'checkbox', options: DROPDOWN_OPTIONS['approach-to-value'], order: 3, column: 2 },
+        { id: 'comments', label: 'Comments', enabled: true, required: false, readonly: false, type: 'textarea', order: 4, column: 2 },
       ],
       'checkboxes': [
-        { id: 'report-format', label: 'Report Format', enabled: true, required: true, systemRequired: true, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['report-format'] },
-        { id: 'residential-forms', label: 'Residential Forms', enabled: true, required: true, systemRequired: true, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['residential-forms'] },
-        { id: 'premise-valued', label: 'Premise Valued', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['premise-valued'] },
-        { id: 'value-type', label: 'Value Type', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['value-type'] },
-        { id: 'value-date-type', label: 'Value Date Type', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['value-date-type'] },
-        { id: 'scope-of-work', label: 'Scope of Work', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'textarea' as FieldInputType },
-        { id: 'market-analysis-level', label: 'Market Analysis Level', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['market-analysis-level'] },
-        { id: 'approach-to-value', label: 'Approach To Value', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['approach-to-value'] },
+        { id: 'report-format', label: 'Report Format', enabled: true, required: true, systemRequired: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['report-format'], order: 0, column: 1 },
+        { id: 'residential-forms', label: 'Residential Forms', enabled: true, required: true, systemRequired: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['residential-forms'], order: 1, column: 1 },
+        { id: 'premise-valued', label: 'Premise Valued', enabled: true, required: true, readonly: false, type: 'checkbox', options: ['Fee Simple', 'Leased Fee', 'Leasehold'], order: 2, column: 1 },
+        { id: 'value-type', label: 'Value Type', enabled: true, required: true, readonly: false, type: 'checkbox', options: ['As Is', 'As Stabilized', 'As Completed', 'Bulk Sale Market Value', 'Retrospective Value'], order: 3, column: 1 },
+        { id: 'scope-of-work', label: 'Scope of Work', enabled: true, required: true, readonly: false, type: 'textarea', order: 0, column: 2 },
+        { id: 'market-analysis-level', label: 'Market Analysis Level', enabled: true, required: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['market-analysis-level'], order: 1, column: 2 },
+        { id: 'approach-to-value', label: 'Approach To Value', enabled: true, required: false, readonly: false, type: 'checkbox', options: DROPDOWN_OPTIONS['approach-to-value'], order: 2, column: 2 },
       ],
       'dropdowns': [
-        { id: 'report-format', label: 'Report Format', enabled: true, required: true, systemRequired: true, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['report-format'] },
-        { id: 'market-analysis-level', label: 'Market Analysis Level', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['market-analysis-level'] },
-        { id: 'as-is-value', label: 'As Is Value', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['valuation-types'] },
-        { id: 'prospective-value-completion', label: 'Prospective Value at Completion', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['valuation-types'] },
-        { id: 'if-leased-fee', label: 'If Leased Fee', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'text' as FieldInputType },
-        { id: 'retrospective-value', label: 'Retrospective Value', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['valuation-types'] },
-        { id: 'prospective-value-stabilization', label: 'Prospective Value at Stabilization', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'select' as FieldInputType, dropdownOptions: DROPDOWN_OPTIONS['valuation-types'] },
-        { id: 'scope-of-work', label: 'Scope of Work', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'textarea' as FieldInputType },
+        { id: 'report-format', label: 'Report Format', enabled: true, required: true, systemRequired: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['report-format'], order: 0, column: 1 },
+        { id: 'market-analysis-level', label: 'Market Analysis Level', enabled: true, required: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['market-analysis-level'], order: 1, column: 1 },
+        { id: 'as-is-value', label: 'As Is Value', enabled: true, required: true, readonly: false, type: 'select', options: ['None', 'Leased Fee (leased, all or part)', 'Fee Simple', 'Leasehold'], order: 2, column: 1 },
+        { id: 'prospective-value-completion', label: 'Prospective Value at Completion', enabled: true, required: false, readonly: false, type: 'select', options: ['None', 'Leased Fee (leased, all or part)', 'Fee Simple', 'Leasehold'], order: 3, column: 1 },
+        { id: 'if-leased-fee', label: 'If Leased Fee', enabled: true, required: false, readonly: false, type: 'text', order: 0, column: 2 },
+        { id: 'retrospective-value', label: 'Retrospective Value', enabled: true, required: false, readonly: false, type: 'select', options: ['None', 'Leased Fee (leased, all or part)', 'Fee Simple', 'Leasehold'], order: 1, column: 2 },
+        { id: 'prospective-value-stabilization', label: 'Prospective Value at Stabilization', enabled: true, required: false, readonly: false, type: 'select', options: ['None', 'Leased Fee (leased, all or part)', 'Fee Simple', 'Leasehold'], order: 2, column: 2 },
+        { id: 'scope-of-work', label: 'Scope of Work', enabled: true, required: true, readonly: false, type: 'textarea', order: 3, column: 2 },
       ],
     };
     return baseFields[templateType];
@@ -185,158 +143,129 @@ export default function BidPanelsPage() {
   );
 
   const [environmentalFields, setEnvironmentalFields] = useState<BidPanelField[]>([
-    { id: 'report-type', label: 'Report Type', enabled: true, required: true, systemRequired: true, readonly: false, inputType: 'select', dropdownOptions: ['Phase I ESA', 'Phase II ESA', 'Transaction Screen', 'Property Condition Assessment'] },
-    { id: 'intended-use', label: 'Intended Use', enabled: true, required: true, systemRequired: true, readonly: false, inputType: 'select', dropdownOptions: DROPDOWN_OPTIONS['intended-use-environmental'] },
-    { id: 'scope-of-work', label: 'Scope Of Work', enabled: true, required: true, systemRequired: false, readonly: false, inputType: 'textarea' },
-    { id: 'bid-reply-time', label: 'Bid Reply Time (Days)', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'number' },
-    { id: 'have-recs-identified', label: 'Have any RECs been identified?', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'select', dropdownOptions: ['Yes', 'No', 'Unknown'] },
-    { id: 'investigation-recommended', label: 'Is further investigation recommended?', enabled: true, required: false, systemRequired: false, readonly: false, inputType: 'select', dropdownOptions: ['Yes', 'No', 'Not Applicable'] },
+    { id: 'report-type', label: 'Report Type', enabled: true, required: true, systemRequired: true, readonly: false, type: 'select', options: ['Phase I ESA', 'Phase II ESA', 'Transaction Screen', 'Property Condition Assessment'], order: 0, column: 1 },
+    { id: 'intended-use', label: 'Intended Use', enabled: true, required: true, systemRequired: true, readonly: false, type: 'select', options: DROPDOWN_OPTIONS['intended-use-environmental'], order: 1, column: 1 },
+    { id: 'scope-of-work', label: 'Scope Of Work', enabled: true, required: true, readonly: false, type: 'textarea', order: 2, column: 1 },
+    { id: 'bid-reply-time', label: 'Bid Reply Time (Days)', enabled: true, required: false, readonly: false, type: 'number', order: 0, column: 2 },
+    { id: 'have-recs-identified', label: 'Have any RECs been identified?', enabled: true, required: false, readonly: false, type: 'select', options: ['Yes', 'No', 'Unknown'], order: 1, column: 2 },
+    { id: 'investigation-recommended', label: 'Is further investigation recommended?', enabled: true, required: false, readonly: false, type: 'select', options: ['Yes', 'No', 'Not Applicable'], order: 2, column: 2 },
   ]);
 
-  // Custom field states
-  const [showCustomFieldForm, setShowCustomFieldForm] = useState(false);
-  const [customFieldLabel, setCustomFieldLabel] = useState('');
-  const [customFieldType, setCustomFieldType] = useState<FieldInputType>('text');
-  const [customFieldOptions, setCustomFieldOptions] = useState<string[]>([]);
-  const [newCustomOption, setNewCustomOption] = useState('');
-  const [customFieldRequired, setCustomFieldRequired] = useState(false);
+  // Get fields by column
+  const getFieldsByColumn = (fields: BidPanelField[], column: 1 | 2) => {
+    return fields
+      .filter(f => f.column === column)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  };
 
-  // Dropdown editing states
-  const [editingDropdownField, setEditingDropdownField] = useState<string | null>(null);
-  const [newDropdownItem, setNewDropdownItem] = useState('');
+  const handleFieldClick = (fieldId: string, panelType: 'appraisal' | 'environmental') => {
+    setSelectedFieldId(fieldId);
+    setSelectedPanelType(panelType);
+  };
 
-  // Image preview modal states
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [imageZoom, setImageZoom] = useState(1);
+  const handleCloseDrawer = () => {
+    setSelectedFieldId(null);
+  };
 
-  const handleFieldLabelUpdate = (fieldId: string, newLabel: string, isEnvironmental: boolean) => {
-    if (isEnvironmental) {
-      setEnvironmentalFields(prev =>
-        prev.map(f => f.id === fieldId ? { ...f, customLabel: newLabel } : f)
-      );
-    } else {
+  const handleFieldUpdate = (fieldId: string, updates: any) => {
+    if (selectedPanelType === 'appraisal') {
       setAppraisalFields(prev =>
-        prev.map(f => f.id === fieldId ? { ...f, customLabel: newLabel } : f)
+        prev.map(field => field.id === fieldId ? { ...field, ...updates } : field)
       );
-    }
-  };
-
-  const handleFieldToggle = (fieldId: string, isEnvironmental: boolean) => {
-    if (isEnvironmental) {
+    } else {
       setEnvironmentalFields(prev =>
-        prev.map(f => f.id === fieldId && !f.systemRequired ? { ...f, enabled: !f.enabled } : f)
-      );
-    } else {
-      setAppraisalFields(prev =>
-        prev.map(f => f.id === fieldId && !f.systemRequired ? { ...f, enabled: !f.enabled } : f)
+        prev.map(field => field.id === fieldId ? { ...field, ...updates } : field)
       );
     }
   };
 
-  const handleRequiredToggle = (fieldId: string, isEnvironmental: boolean) => {
-    if (isEnvironmental) {
-      setEnvironmentalFields(prev =>
-        prev.map(f => f.id === fieldId && !f.systemRequired ? { ...f, required: !f.required } : f)
-      );
-    } else {
-      setAppraisalFields(prev =>
-        prev.map(f => f.id === fieldId && !f.systemRequired ? { ...f, required: !f.required } : f)
-      );
-    }
-  };
-
-  const handleAddDropdownItem = (fieldId: string, isEnvironmental: boolean) => {
-    if (!newDropdownItem.trim()) return;
-    
-    if (isEnvironmental) {
-      setEnvironmentalFields(prev =>
-        prev.map(field =>
-          field.id === fieldId 
-            ? { ...field, dropdownOptions: [...(field.dropdownOptions || []), newDropdownItem.trim()] }
-            : field
-        )
-      );
-    } else {
-      setAppraisalFields(prev =>
-        prev.map(field =>
-          field.id === fieldId 
-            ? { ...field, dropdownOptions: [...(field.dropdownOptions || []), newDropdownItem.trim()] }
-            : field
-        )
-      );
-    }
-    setNewDropdownItem('');
-  };
-
-  const handleRemoveDropdownItem = (fieldId: string, item: string, isEnvironmental: boolean) => {
-    if (isEnvironmental) {
-      setEnvironmentalFields(prev =>
-        prev.map(field =>
-          field.id === fieldId 
-            ? { ...field, dropdownOptions: field.dropdownOptions?.filter(i => i !== item) }
-            : field
-        )
-      );
-    } else {
-      setAppraisalFields(prev =>
-        prev.map(field =>
-          field.id === fieldId 
-            ? { ...field, dropdownOptions: field.dropdownOptions?.filter(i => i !== item) }
-            : field
-        )
-      );
-    }
-  };
-
-  const handleAddCustomField = (isEnvironmental: boolean) => {
-    if (!customFieldLabel.trim()) return;
-
-    const newField: BidPanelField = {
-      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      label: customFieldLabel.trim(),
-      customLabel: customFieldLabel.trim(),
-      enabled: true,
-      required: customFieldRequired,
-      systemRequired: false,
-      readonly: false,
-      inputType: customFieldType,
-      dropdownOptions: (customFieldType === 'select') ? customFieldOptions : undefined,
-    };
-
-    if (isEnvironmental) {
-      setEnvironmentalFields([...environmentalFields, newField]);
-    } else {
-      setAppraisalFields([...appraisalFields, newField]);
-    }
-    
-    // Reset form
-    setCustomFieldLabel('');
-    setCustomFieldType('text');
-    setCustomFieldOptions([]);
-    setNewCustomOption('');
-    setCustomFieldRequired(false);
-    setShowCustomFieldForm(false);
-  };
-
-  const handleAddCustomOption = () => {
-    if (newCustomOption.trim() && !customFieldOptions.includes(newCustomOption.trim())) {
-      setCustomFieldOptions([...customFieldOptions, newCustomOption.trim()]);
-      setNewCustomOption('');
-    }
-  };
-
-  const handleRemoveCustomOption = (option: string) => {
-    setCustomFieldOptions(customFieldOptions.filter(o => o !== option));
-  };
-
-  const handleRemoveCustomField = (fieldId: string, isEnvironmental: boolean) => {
+  const handleDeleteField = (fieldId: string) => {
     if (fieldId.startsWith('custom-')) {
-      if (isEnvironmental) {
-        setEnvironmentalFields(environmentalFields.filter(f => f.id !== fieldId));
-      } else {
-        setAppraisalFields(appraisalFields.filter(f => f.id !== fieldId));
+      if (selectedPanelType === 'appraisal') {
+        setAppraisalFields(prev => prev.filter(f => f.id !== fieldId));
+    } else {
+        setEnvironmentalFields(prev => prev.filter(f => f.id !== fieldId));
+      }
+      if (selectedFieldId === fieldId) {
+        setSelectedFieldId(null);
       }
     }
+  };
+
+  const handleDragStart = (fieldId: string) => {
+    setDraggingFieldId(fieldId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingFieldId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetFieldId: string, targetColumn: 1 | 2, panelType: 'appraisal' | 'environmental') => {
+    if (!draggingFieldId || draggingFieldId === targetFieldId) return;
+
+    const fields = panelType === 'appraisal' ? appraisalFields : environmentalFields;
+    const setFields = panelType === 'appraisal' ? setAppraisalFields : setEnvironmentalFields;
+
+    const draggingField = fields.find(f => f.id === draggingFieldId);
+    if (!draggingField) return;
+
+    setFields(prevFields => {
+      const newFields = [...prevFields];
+      const categoryFields = newFields.filter(f => f.column === targetColumn).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      
+      const draggingIndex = categoryFields.findIndex(f => f.id === draggingFieldId);
+      const targetIndex = categoryFields.findIndex(f => f.id === targetFieldId);
+      
+      const fieldToMove = newFields.find(f => f.id === draggingFieldId);
+      if (fieldToMove) {
+        fieldToMove.column = targetColumn;
+      }
+
+      if (draggingIndex === -1) {
+        categoryFields.splice(targetIndex, 0, fieldToMove!);
+    } else {
+        const [removed] = categoryFields.splice(draggingIndex, 1);
+        categoryFields.splice(targetIndex, 0, removed);
+      }
+
+      categoryFields.forEach((field, idx) => {
+        field.order = idx;
+      });
+
+      return newFields;
+    });
+
+    setDraggingFieldId(null);
+  };
+
+  const handleAddField = (fieldData: { inputType: FieldInputType; label: string; dropdownOptions?: string[] }) => {
+    const newField: BidPanelField = {
+      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      label: fieldData.label,
+      customLabel: fieldData.label,
+      enabled: true,
+      required: false,
+      systemRequired: false,
+      systemFixed: false,
+      readonly: false,
+      type: fieldData.inputType as BidPanelField['type'],
+      options: fieldData.dropdownOptions,
+      order: 999,
+      column: 1,
+    };
+
+    if (selectedPanelType === 'appraisal') {
+      setAppraisalFields([...appraisalFields, newField]);
+    } else {
+      setEnvironmentalFields([...environmentalFields, newField]);
+    }
+    
+    setSelectedFieldId(newField.id);
+    setIsAddFieldModalOpen(false);
   };
 
   const handleContinue = () => {
@@ -350,6 +279,15 @@ export default function BidPanelsPage() {
     router.push('/definitions/complete');
   };
 
+  // Update appraisal fields when template changes
+  useEffect(() => {
+    setAppraisalFields(getAppraisalPanelFields(selectedBidTemplate));
+  }, [selectedBidTemplate]);
+
+  const selectedField = selectedPanelType === 'appraisal' 
+    ? appraisalFields.find(f => f.id === selectedFieldId) 
+    : environmentalFields.find(f => f.id === selectedFieldId);
+
   const steps = [
     { id: '1', label: 'Property Categories', status: 'completed' as const },
     { id: '2', label: 'Property Fields', status: 'completed' as const },
@@ -358,47 +296,39 @@ export default function BidPanelsPage() {
     { id: '5', label: 'Bid Panels', status: 'in_progress' as const },
   ];
 
-  // Update fields when template changes
-  useEffect(() => {
-    setAppraisalFields(getAppraisalPanelFields(selectedBidTemplate));
-  }, [selectedBidTemplate]);
-
   return (
     <MainLayout 
       currentStep={3} 
       steps={steps}
       title="Definitions"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div 
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest('[data-field-card]') === null &&
+              (e.target as HTMLElement).closest('[data-settings-drawer]') === null) {
+            setSelectedFieldId(null);
+          }
+        }}
+      >
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
             Bid Engagement Panel Configuration
           </h1>
           <p className="text-base text-muted-foreground">
-            Select and customize the bid engagement panels for appraisals and environmental orders
+            Configure bid panels for appraisals and environmental orders
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content (2/3) */}
           <div className="lg:col-span-2">
-            
-            {/* Appraisal Bid Engagement Panel */}
+            {/* Bid Template Selection */}
             <div className="bg-card border border-border rounded-xl p-6 mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-foreground">Appraisal Bid Engagement Panel</h2>
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                  Required
-                </span>
-              </div>
-
-              <p className="text-sm text-muted-foreground mb-5">
-                Select the template layout for your appraisal bid engagement panel. This determines how vendors will view and interact with bid requirements.
-              </p>
-
-              <div className="space-y-4 mb-6">
-                {/* Value Premise */}
+              <h2 className="text-lg font-semibold text-foreground mb-4">Select Panel Layout</h2>
+              <div className="space-y-4">
+                {/* 3-Column Option */}
                 <label className={`flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer hover:bg-accent transition-colors ${
                   selectedBidTemplate === '3-column' ? 'border-primary bg-primary/5' : 'border-border'
                 }`}>
@@ -432,7 +362,7 @@ export default function BidPanelsPage() {
                   </button>
                 </label>
 
-                {/* Value Premise with 4 Fields */}
+                {/* 4-Column Option */}
                 <label className={`flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer hover:bg-accent transition-colors ${
                   selectedBidTemplate === '4-column' ? 'border-primary bg-primary/5' : 'border-border'
                 }`}>
@@ -466,7 +396,7 @@ export default function BidPanelsPage() {
                   </button>
                 </label>
 
-                {/* Premise Scenarios */}
+                {/* Checkboxes Option */}
                 <label className={`flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer hover:bg-accent transition-colors ${
                   selectedBidTemplate === 'checkboxes' ? 'border-primary bg-primary/5' : 'border-border'
                 }`}>
@@ -500,7 +430,7 @@ export default function BidPanelsPage() {
                   </button>
                 </label>
 
-                {/* Valuation Scenarios */}
+                {/* Dropdowns Option */}
                 <label className={`flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer hover:bg-accent transition-colors ${
                   selectedBidTemplate === 'dropdowns' ? 'border-primary bg-primary/5' : 'border-border'
                 }`}>
@@ -534,178 +464,169 @@ export default function BidPanelsPage() {
                   </button>
                 </label>
               </div>
+              </div>
 
-              {/* Customize Panel Fields */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Customize Panel Fields</h3>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Customize the field labels and dropdown options that will appear in the selected panel layout.
-                </p>
-                <div className="space-y-2">
-                  {appraisalFields.map((field) => (
-                    <FieldConfiguration
-                      key={field.id}
-                      field={field}
-                      onToggle={() => handleFieldToggle(field.id, false)}
-                      onToggleRequired={() => handleRequiredToggle(field.id, false)}
-                      onLabelUpdate={(label) => handleFieldLabelUpdate(field.id, label, false)}
-                      onAddDropdownItem={() => handleAddDropdownItem(field.id, false)}
-                      onRemoveDropdownItem={(item) => handleRemoveDropdownItem(field.id, item, false)}
-                      editingDropdownField={editingDropdownField}
-                      setEditingDropdownField={setEditingDropdownField}
-                      newDropdownItem={newDropdownItem}
-                      setNewDropdownItem={setNewDropdownItem}
-                      isCustomField={field.id.startsWith('custom-')}
-                      onRemoveCustomField={() => handleRemoveCustomField(field.id, false)}
-                    />
-                  ))}
-
-                  {/* Add Custom Field Button */}
-                  {!showCustomFieldForm ? (
+            {/* Appraisal Panel Fields */}
+            <div className="bg-card border border-border rounded-xl overflow-hidden mb-6">
+              <div className="p-6 border-b border-border flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground mb-1">Customize Appraisal Panel Fields</h2>
+              <p className="text-sm text-muted-foreground">
+                Configure fields for the selected panel layout
+              </p>
+            </div>
                     <button
-                      onClick={() => setShowCustomFieldForm(true)}
-                      className="w-full px-4 py-3 text-sm font-medium text-primary bg-white hover:bg-primary/5 rounded-lg transition-colors flex items-center justify-center gap-2 border-2 border-dashed border-primary/30"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              onClick={() => {
+                setSelectedPanelType('appraisal');
+                setIsAddFieldModalOpen(true);
+              }}
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                      Add Custom Field
+              Add Field
                     </button>
-                  ) : (
-                    <CustomFieldForm
-                      customFieldLabel={customFieldLabel}
-                      setCustomFieldLabel={setCustomFieldLabel}
-                      customFieldType={customFieldType}
-                      setCustomFieldType={setCustomFieldType}
-                      customFieldRequired={customFieldRequired}
-                      setCustomFieldRequired={setCustomFieldRequired}
-                      customFieldOptions={customFieldOptions}
-                      newCustomOption={newCustomOption}
-                      setNewCustomOption={setNewCustomOption}
-                      onAddCustomOption={handleAddCustomOption}
-                      onRemoveCustomOption={handleRemoveCustomOption}
-                      onAddCustomField={() => handleAddCustomField(false)}
-                      onCancel={() => {
-                        setShowCustomFieldForm(false);
-                        setCustomFieldLabel('');
-                        setCustomFieldType('text');
-                        setCustomFieldOptions([]);
-                        setNewCustomOption('');
-                        setCustomFieldRequired(false);
-                      }}
-                    />
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            {/* Column 1 */}
+            <div className="p-6 min-h-[200px]" onDragOver={handleDragOver}>
+              {getFieldsByColumn(appraisalFields, 1).map((field) => (
+                <DraggableField
+                  key={field.id}
+                  field={field}
+                  isSelected={selectedFieldId === field.id && selectedPanelType === 'appraisal'}
+                  onClick={() => handleFieldClick(field.id, 'appraisal')}
+                  onDelete={() => handleDeleteField(field.id)}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={handleDragOver}
+                  onDrop={(targetId) => handleDrop(targetId, 1, 'appraisal')}
+                  isDragging={draggingFieldId === field.id}
+                />
+              ))}
+              {getFieldsByColumn(appraisalFields, 1).length === 0 && (
+                <div className="flex items-center justify-center h-32 border-2 border-dashed border-border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Drag fields here</p>
+                </div>
                   )}
                 </div>
+
+            {/* Column 2 */}
+            <div className="p-6 min-h-[200px]" onDragOver={handleDragOver}>
+              {getFieldsByColumn(appraisalFields, 2).map((field) => (
+                <DraggableField
+                  key={field.id}
+                  field={field}
+                  isSelected={selectedFieldId === field.id && selectedPanelType === 'appraisal'}
+                  onClick={() => handleFieldClick(field.id, 'appraisal')}
+                  onDelete={() => handleDeleteField(field.id)}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={handleDragOver}
+                  onDrop={(targetId) => handleDrop(targetId, 2, 'appraisal')}
+                  isDragging={draggingFieldId === field.id}
+                />
+              ))}
+              {getFieldsByColumn(appraisalFields, 2).length === 0 && (
+                <div className="flex items-center justify-center h-32 border-2 border-dashed border-border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Drag fields here</p>
               </div>
+              )}
+            </div>
+          </div>
+              </div>
+
+        {/* Environmental Panel Fields */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden mb-6">
+          <div className="p-6 border-b border-border">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-1">Customize Environmental Panel Fields</h2>
+                <p className="text-sm text-muted-foreground">
+                  Configure fields for environmental order requests
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedPanelType('environmental');
+                  setIsAddFieldModalOpen(true);
+                }}
+                className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Field
+              </button>
             </div>
 
-            {/* Environmental Orders Section */}
-            <div className="bg-card border border-border rounded-xl p-6 mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-foreground">Environmental Orders</h2>
-                <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded">
-                  Optional
-                </span>
-              </div>
-
-              <p className="text-sm text-muted-foreground mb-4">
-                Configure environmental order settings. If you don't use environmental orders, you can disable this section.
-              </p>
-
-              {/* Enable/Disable Environmental */}
-              <label className={`flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer hover:bg-accent transition-colors ${
+            {/* Environmental Enable/Disable Toggle */}
+            <label className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
                 useEnvironmental ? 'border-primary bg-primary/5' : 'border-border'
               }`}>
                 <input
-                  id="use-environmental"
                   type="checkbox"
                   checked={useEnvironmental}
                   onChange={(e) => setUseEnvironmental(e.target.checked)}
-                  className="w-5 h-5 text-primary border-input rounded mt-1 focus:ring-2 focus:ring-ring"
+                className="w-5 h-5 text-primary border-input rounded"
                 />
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-foreground mb-1">Environmental Orders</h3>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Enable Environmental Orders</h3>
                   <p className="text-xs text-muted-foreground">
-                    Enable if your organization processes environmental site assessments and related orders.
+                  Check this if your organization processes environmental site assessments
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setPreviewImage('/panel-screenshots/bid-engagement-environmental-panel.png');
-                  }}
-                  className="w-32 h-20 bg-slate-100 rounded border-2 border-slate-300 hover:border-primary overflow-hidden flex-shrink-0 transition-colors"
-                >
-                  <img 
-                    src="/panel-screenshots/bid-engagement-environmental-panel.png" 
-                    alt="Environmental Panel Preview"
-                    className="w-full h-full object-cover"
-                  />
-                </button>
               </label>
+          </div>
 
-              {/* Environmental Panel Configuration (shown only if enabled) */}
               {useEnvironmental && (
-                <div className="space-y-4 mt-4">
-                  {/* Customize Environmental Fields */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-foreground mb-3">Customize Environmental Panel Fields</h3>
-                    <div className="space-y-2">
-                      {environmentalFields.map((field) => (
-                        <FieldConfiguration
+            <div className="grid grid-cols-2 gap-6">
+              {/* Column 1 */}
+              <div className="p-6 min-h-[200px]" onDragOver={handleDragOver}>
+                {getFieldsByColumn(environmentalFields, 1).map((field) => (
+                  <DraggableField
                           key={field.id}
                           field={field}
-                          onToggle={() => handleFieldToggle(field.id, true)}
-                          onToggleRequired={() => handleRequiredToggle(field.id, true)}
-                          onLabelUpdate={(label) => handleFieldLabelUpdate(field.id, label, true)}
-                          onAddDropdownItem={() => handleAddDropdownItem(field.id, true)}
-                          onRemoveDropdownItem={(item) => handleRemoveDropdownItem(field.id, item, true)}
-                          editingDropdownField={editingDropdownField}
-                          setEditingDropdownField={setEditingDropdownField}
-                          newDropdownItem={newDropdownItem}
-                          setNewDropdownItem={setNewDropdownItem}
-                          isCustomField={field.id.startsWith('custom-')}
-                          onRemoveCustomField={() => handleRemoveCustomField(field.id, true)}
+                    isSelected={selectedFieldId === field.id && selectedPanelType === 'environmental'}
+                    onClick={() => handleFieldClick(field.id, 'environmental')}
+                    onDelete={() => handleDeleteField(field.id)}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={handleDragOver}
+                    onDrop={(targetId) => handleDrop(targetId, 1, 'environmental')}
+                    isDragging={draggingFieldId === field.id}
                         />
                       ))}
+                {getFieldsByColumn(environmentalFields, 1).length === 0 && (
+                  <div className="flex items-center justify-center h-32 border-2 border-dashed border-border rounded-lg">
+                    <p className="text-sm text-muted-foreground">Drag fields here</p>
+                  </div>
+                )}
+              </div>
 
-                      {/* Add Custom Field for Environmental */}
-                      {!showCustomFieldForm ? (
-                        <button
-                          onClick={() => setShowCustomFieldForm(true)}
-                          className="w-full px-4 py-3 text-sm font-medium text-primary bg-white hover:bg-primary/5 rounded-lg transition-colors flex items-center justify-center gap-2 border-2 border-dashed border-primary/30"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                          Add Custom Field
-                        </button>
-                      ) : (
-                        <CustomFieldForm
-                          customFieldLabel={customFieldLabel}
-                          setCustomFieldLabel={setCustomFieldLabel}
-                          customFieldType={customFieldType}
-                          setCustomFieldType={setCustomFieldType}
-                          customFieldRequired={customFieldRequired}
-                          setCustomFieldRequired={setCustomFieldRequired}
-                          customFieldOptions={customFieldOptions}
-                          newCustomOption={newCustomOption}
-                          setNewCustomOption={setNewCustomOption}
-                          onAddCustomOption={handleAddCustomOption}
-                          onRemoveCustomOption={handleRemoveCustomOption}
-                          onAddCustomField={() => handleAddCustomField(true)}
-                          onCancel={() => {
-                            setShowCustomFieldForm(false);
-                            setCustomFieldLabel('');
-                            setCustomFieldType('text');
-                            setCustomFieldOptions([]);
-                            setNewCustomOption('');
-                            setCustomFieldRequired(false);
-                          }}
-                        />
-                      )}
-                    </div>
+              {/* Column 2 */}
+              <div className="p-6 min-h-[200px]" onDragOver={handleDragOver}>
+                {getFieldsByColumn(environmentalFields, 2).map((field) => (
+                  <DraggableField
+                    key={field.id}
+                    field={field}
+                    isSelected={selectedFieldId === field.id && selectedPanelType === 'environmental'}
+                    onClick={() => handleFieldClick(field.id, 'environmental')}
+                    onDelete={() => handleDeleteField(field.id)}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={handleDragOver}
+                    onDrop={(targetId) => handleDrop(targetId, 2, 'environmental')}
+                    isDragging={draggingFieldId === field.id}
+                  />
+                ))}
+                {getFieldsByColumn(environmentalFields, 2).length === 0 && (
+                  <div className="flex items-center justify-center h-32 border-2 border-dashed border-border rounded-lg">
+                    <p className="text-sm text-muted-foreground">Drag fields here</p>
+                  </div>
+                )}
                   </div>
                 </div>
               )}
@@ -739,7 +660,7 @@ export default function BidPanelsPage() {
               </div>
 
               <div className="space-y-4">
-                {/* Video Tutorial Placeholder */}
+                {/* Video Tutorial */}
                 <div>
                   <h4 className="font-medium text-foreground text-xs mb-2 flex items-center gap-1.5">
                     <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -780,6 +701,23 @@ export default function BidPanelsPage() {
           </div>
         </div>
       </div>
+
+      {/* Field Settings Drawer */}
+      {selectedField && (
+        <FieldSettingsDrawer
+          field={selectedField}
+          onClose={handleCloseDrawer}
+          onUpdate={handleFieldUpdate}
+          onDelete={handleDeleteField}
+        />
+      )}
+
+      {/* Add Field Modal */}
+      <AddFieldModal
+        isOpen={isAddFieldModalOpen}
+        onClose={() => setIsAddFieldModalOpen(false)}
+        onAdd={handleAddField}
+      />
 
       {/* Image Preview Modal */}
       {previewImage && (
@@ -854,341 +792,5 @@ export default function BidPanelsPage() {
         </div>
       )}
     </MainLayout>
-  );
-}
-
-// Field Configuration Component
-function FieldConfiguration({
-  field,
-  onToggle,
-  onToggleRequired,
-  onLabelUpdate,
-  onAddDropdownItem,
-  onRemoveDropdownItem,
-  editingDropdownField,
-  setEditingDropdownField,
-  newDropdownItem,
-  setNewDropdownItem,
-  isCustomField = false,
-  onRemoveCustomField
-}: {
-  field: BidPanelField;
-  onToggle: () => void;
-  onToggleRequired: () => void;
-  onLabelUpdate: (label: string) => void;
-  onAddDropdownItem: () => void;
-  onRemoveDropdownItem: (item: string) => void;
-  editingDropdownField: string | null;
-  setEditingDropdownField: (fieldId: string | null) => void;
-  newDropdownItem: string;
-  setNewDropdownItem: (value: string) => void;
-  isCustomField?: boolean;
-  onRemoveCustomField?: () => void;
-}) {
-  const showDropdownManagement = field.inputType === 'select' && !field.readonly;
-
-  return (
-    <div className={`border rounded-lg p-4 transition-shadow ${
-      isCustomField ? 'border-blue-300 bg-blue-50/30' : field.systemRequired ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-white hover:shadow-sm'
-    }`}>
-      {/* Field Header */}
-      <div className="flex items-start gap-3 mb-3">
-        <input
-          type="checkbox"
-          checked={field.enabled}
-          onChange={onToggle}
-          disabled={field.systemRequired}
-          className="mt-1 w-4 h-4 text-primary border-input rounded focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-label={`Enable ${field.label} field`}
-        />
-        
-        <div className="flex-1 space-y-2">
-          {/* Badges */}
-          <div className="flex items-center gap-1 mb-1 flex-wrap">
-            {isCustomField && (
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                Custom Field
-              </span>
-            )}
-            {field.systemRequired && (
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                </svg>
-                System Required
-              </span>
-            )}
-          </div>
-          
-          {/* Field Label */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              Field Label {field.required && <span className="text-destructive">*</span>}
-              {field.readonly && <span className="text-xs text-slate-500 ml-2">(Read-only)</span>}
-            </label>
-            <input
-              type="text"
-              value={field.customLabel || field.label}
-              onChange={(e) => onLabelUpdate(e.target.value)}
-              disabled={!field.enabled && !field.required && !field.systemRequired}
-              className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:bg-slate-50 disabled:text-slate-500"
-              placeholder={field.label}
-            />
-          </div>
-
-          {/* Required Toggle */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id={`required-${field.id}`}
-              checked={field.required || false}
-              onChange={onToggleRequired}
-              disabled={field.systemRequired || (!field.enabled && !field.required)}
-              className="w-4 h-4 text-primary border-input rounded focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label={`Mark ${field.label} as required`}
-            />
-            <label htmlFor={`required-${field.id}`} className="text-xs font-medium text-slate-600 cursor-pointer flex items-center gap-1">
-              Required Field
-              {field.systemRequired && (
-                <svg className="w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 20 20" aria-label="System required - cannot be changed">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                </svg>
-              )}
-            </label>
-          </div>
-
-          {/* Input Type Display */}
-          <div className="flex items-center gap-2 text-xs text-slate-600">
-            <span className="font-medium">Type:</span>
-            <span className="px-2 py-0.5 bg-slate-100 rounded capitalize">{field.inputType || 'text'}</span>
-          </div>
-
-          {/* System Required Info */}
-          {field.systemRequired && (
-            <div className="bg-amber-50 border border-amber-200 rounded p-2">
-              <p className="text-xs text-amber-900">
-                <strong>Note:</strong> This field is required by the system and cannot be disabled or made optional. You can only change its label.
-              </p>
-            </div>
-          )}
-
-          {/* Dropdown Options Management */}
-          {showDropdownManagement && (
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-foreground">
-                  Dropdown Options ({field.dropdownOptions?.length || 0})
-                </label>
-                <button
-                  onClick={() => setEditingDropdownField(editingDropdownField === field.id ? null : field.id)}
-                  className="text-xs text-primary hover:text-primary/80 font-medium"
-                >
-                  {editingDropdownField === field.id ? 'Done' : 'Manage Options'}
-                </button>
-              </div>
-
-              {/* Show current options */}
-              {field.dropdownOptions && field.dropdownOptions.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {field.dropdownOptions.slice(0, editingDropdownField === field.id ? undefined : 5).map((option, index) => (
-                    <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 text-xs rounded">
-                      {option}
-                      {editingDropdownField === field.id && (
-                        <button
-                          onClick={() => onRemoveDropdownItem(option)}
-                          className="hover:text-destructive"
-                          aria-label={`Remove ${option}`}
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                  {!editingDropdownField && field.dropdownOptions.length > 5 && (
-                    <span className="text-xs text-slate-500">+{field.dropdownOptions.length - 5} more</span>
-                  )}
-                </div>
-              )}
-
-              {/* Add new option */}
-              {editingDropdownField === field.id && (
-                <div className="flex gap-2 pt-2 border-t border-slate-300">
-                  <input
-                    type="text"
-                    value={newDropdownItem}
-                    onChange={(e) => setNewDropdownItem(e.target.value)}
-                    placeholder="Add new option..."
-                    className="flex-1 px-2 py-1.5 text-xs border border-input rounded focus:outline-none focus:ring-2 focus:ring-ring"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), onAddDropdownItem())}
-                  />
-                  <button
-                    onClick={onAddDropdownItem}
-                    disabled={!newDropdownItem.trim()}
-                    className="px-3 py-1.5 text-xs font-medium text-white bg-primary hover:bg-primary/90 rounded disabled:opacity-50 transition-colors"
-                  >
-                    Add
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Delete Custom Field Button */}
-        {isCustomField && onRemoveCustomField && (
-          <button
-            onClick={onRemoveCustomField}
-            className="ml-auto text-destructive hover:text-destructive/80 transition-colors p-1"
-            title="Remove custom field"
-            aria-label="Remove custom field"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Custom Field Form Component
-function CustomFieldForm({
-  customFieldLabel,
-  setCustomFieldLabel,
-  customFieldType,
-  setCustomFieldType,
-  customFieldRequired,
-  setCustomFieldRequired,
-  customFieldOptions,
-  newCustomOption,
-  setNewCustomOption,
-  onAddCustomOption,
-  onRemoveCustomOption,
-  onAddCustomField,
-  onCancel
-}: {
-  customFieldLabel: string;
-  setCustomFieldLabel: (value: string) => void;
-  customFieldType: FieldInputType;
-  setCustomFieldType: (value: FieldInputType) => void;
-  customFieldRequired: boolean;
-  setCustomFieldRequired: (value: boolean) => void;
-  customFieldOptions: string[];
-  newCustomOption: string;
-  setNewCustomOption: (value: string) => void;
-  onAddCustomOption: () => void;
-  onRemoveCustomOption: (option: string) => void;
-  onAddCustomField: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
-      <h3 className="text-sm font-semibold text-foreground">Create Custom Field</h3>
-      
-      <div>
-        <label className="block text-xs font-medium text-foreground mb-1">
-          Field Label <span className="text-destructive">*</span>
-        </label>
-        <input
-          type="text"
-          value={customFieldLabel}
-          onChange={(e) => setCustomFieldLabel(e.target.value)}
-          placeholder="e.g., Special Instructions"
-          className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="custom-field-type-bid" className="block text-xs font-medium text-foreground mb-1">
-          Input Type <span className="text-destructive">*</span>
-        </label>
-        <select
-          id="custom-field-type-bid"
-          value={customFieldType}
-          onChange={(e) => setCustomFieldType(e.target.value as FieldInputType)}
-          className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="text">Text</option>
-          <option value="number">Number</option>
-          <option value="date">Date</option>
-          <option value="textarea">Text Area</option>
-          <option value="select">Dropdown (Select)</option>
-        </select>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <input
-          id="custom-field-required-bid"
-          type="checkbox"
-          checked={customFieldRequired}
-          onChange={(e) => setCustomFieldRequired(e.target.checked)}
-          className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
-        />
-        <label htmlFor="custom-field-required-bid" className="text-xs font-medium text-foreground cursor-pointer">
-          Mark as required field
-        </label>
-      </div>
-
-      {customFieldType === 'select' && (
-        <div>
-          <label className="block text-xs font-medium text-foreground mb-1">
-            Dropdown Options
-          </label>
-          <div className="space-y-2">
-            {customFieldOptions.map((option, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <span className="flex-1 px-2 py-1 bg-white border border-input rounded text-xs">
-                  {option}
-                </span>
-                <button
-                  onClick={() => onRemoveCustomOption(option)}
-                  className="text-destructive hover:text-destructive/80"
-                  aria-label={`Remove ${option}`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newCustomOption}
-                onChange={(e) => setNewCustomOption(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), onAddCustomOption())}
-                placeholder="Add option"
-                className="flex-1 px-3 py-1.5 text-sm border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button
-                onClick={onAddCustomOption}
-                className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex items-center gap-2 pt-2">
-        <button
-          onClick={onAddCustomField}
-          disabled={!customFieldLabel.trim() || (customFieldType === 'select' && customFieldOptions.length === 0)}
-          className="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Create Field
-        </button>
-        <button
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
   );
 }

@@ -200,6 +200,7 @@ export default function CSPortalPage() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [newClientData, setNewClientData] = useState({
     orgName: '',
     contactName: '',
@@ -214,13 +215,56 @@ export default function CSPortalPage() {
   ]);
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [isAtRiskExpanded, setIsAtRiskExpanded] = useState(false);
   const itemsPerPage = 10;
 
+  // Filter clients by active/completed
+  const activeClients = SAMPLE_CLIENTS.filter(c => c.progress < 100);
+  const completedClients = SAMPLE_CLIENTS.filter(c => c.progress === 100);
+  const displayedClients = activeTab === 'active' ? activeClients : completedClients;
+
   // Calculate pagination
-  const totalPages = Math.ceil(SAMPLE_CLIENTS.length / itemsPerPage);
+  const totalPages = Math.ceil(displayedClients.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentClients = SAMPLE_CLIENTS.slice(startIndex, endIndex);
+  const currentClients = displayedClients.slice(startIndex, endIndex);
+
+  // Dashboard metrics
+  const atRiskClients = activeClients.filter(c => {
+    const heat = getStatusHeat(c.progress, c.initiationDate, c.projectedGoLiveDate);
+    return heat === 'hot' || c.progress < 25; // Behind schedule or stuck on early modules
+  });
+
+  const avgCompletion = Math.round(
+    activeClients.reduce((acc, c) => acc + c.progress, 0) / activeClients.length
+  );
+
+  const thisMonthGoLives = SAMPLE_CLIENTS.filter(c => {
+    const goLiveDate = new Date(c.projectedGoLiveDate);
+    const now = new Date();
+    return goLiveDate.getMonth() === now.getMonth() && goLiveDate.getFullYear() === now.getFullYear();
+  }).length;
+
+  // Module completion funnel data (mock)
+  const moduleStages = [
+    { name: 'Organization Setup', count: 15, percentage: 100 },
+    { name: 'Property Records', count: 13, percentage: 87 },
+    { name: 'Request Forms', count: 11, percentage: 73 },
+    { name: 'Bid Panels', count: 9, percentage: 60 },
+    { name: 'Definitions', count: 6, percentage: 40 },
+    { name: 'User Management', count: 3, percentage: 20 },
+  ];
+
+  // Upcoming go-lives (next 2 weeks)
+  const upcomingGoLives = SAMPLE_CLIENTS
+    .filter(c => {
+      const goLiveDate = new Date(c.projectedGoLiveDate);
+      const now = new Date();
+      const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+      return goLiveDate >= now && goLiveDate <= twoWeeksFromNow && c.progress < 100;
+    })
+    .sort((a, b) => new Date(a.projectedGoLiveDate).getTime() - new Date(b.projectedGoLiveDate).getTime())
+    .slice(0, 5);
 
   const getStatusColor = (status: Client['status']) => {
     switch (status) {
@@ -396,10 +440,10 @@ export default function CSPortalPage() {
         <div className="mb-8 flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
-              Client Onboarding List
+              Client Onboarding Dashboard
             </h1>
             <p className="text-slate-600">
-              Manage and monitor the onboarding progress of all your clients. Track status, review tickets, and access detailed client information.
+              Monitor onboarding progress, identify at-risk clients, and track key metrics across all active onboardings.
             </p>
           </div>
           <button
@@ -413,8 +457,366 @@ export default function CSPortalPage() {
           </button>
         </div>
 
+        {/* Row 1: Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Active Clients */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                +2 this month
+              </span>
+            </div>
+            <div className="text-3xl font-bold text-slate-900 mb-1">{activeClients.length}</div>
+            <div className="text-sm text-slate-600">Active Onboarding Clients</div>
+          </div>
+
+          {/* Average Completion */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div className="w-16 h-16">
+                <svg viewBox="0 0 36 36" className="transform -rotate-90">
+                  <circle cx="18" cy="18" r="16" fill="none" stroke="#E5E7EB" strokeWidth="3" />
+                  <circle 
+                    cx="18" 
+                    cy="18" 
+                    r="16" 
+                    fill="none" 
+                    stroke="#9F2E2B" 
+                    strokeWidth="3"
+                    strokeDasharray={`${avgCompletion * 1.005}, 100.5`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-slate-900 mb-1">{avgCompletion}%</div>
+            <div className="text-sm text-slate-600">Average Completion Rate</div>
+          </div>
+
+          {/* This Month's Go-Lives */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <span className="text-xs font-medium text-slate-500">November 2024</span>
+            </div>
+            <div className="text-3xl font-bold text-slate-900 mb-1">{thisMonthGoLives}</div>
+            <div className="text-sm text-slate-600">Scheduled Go-Lives</div>
+          </div>
+
+          {/* At-Risk Clients */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              {atRiskClients.length > 0 && (
+                <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                  Needs Attention
+                </span>
+              )}
+            </div>
+            <div className="text-3xl font-bold text-red-600 mb-1">{atRiskClients.length}</div>
+            <div className="text-sm text-slate-600">At-Risk Clients</div>
+          </div>
+        </div>
+
+        {/* Row 2: At-Risk Clients Accordion */}
+        {atRiskClients.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+            {/* Accordion Header - Always Visible */}
+            <button
+              onClick={() => setIsAtRiskExpanded(!isAtRiskExpanded)}
+              className="w-full border-b border-slate-200 px-6 py-4 bg-red-50 hover:bg-red-100 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <h2 className="text-lg font-bold text-slate-900">At-Risk Clients</h2>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-600 text-white">
+                    {atRiskClients.length}
+                  </span>
+                  <span className="text-sm text-slate-600">need attention</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!isAtRiskExpanded && atRiskClients.length > 0 && (
+                    <span className="text-xs font-medium text-red-600 bg-red-100 px-3 py-1 rounded-full">
+                      {atRiskClients.length} behind schedule
+                    </span>
+                  )}
+                  <svg 
+                    className={`w-5 h-5 text-slate-600 transition-transform ${isAtRiskExpanded ? 'rotate-180' : ''}`}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </button>
+            
+            {/* Accordion Content - Expandable */}
+            {isAtRiskExpanded && (
+              <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Bank Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Days Behind</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Stuck Module</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Completion</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase">CS Owner</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-200">
+                  {atRiskClients.slice(0, 7).map((client) => {
+                    const daysBehind = Math.max(0, Math.floor(
+                      (new Date().getTime() - new Date(client.initiationDate).getTime()) / (1000 * 60 * 60 * 24) - 
+                      (client.progress * 0.6)
+                    ));
+                    const stuckModule = client.progress < 25 ? 'Organization Setup' : 
+                                       client.progress < 50 ? 'Property Records' : 
+                                       client.progress < 75 ? 'Request Forms' : 'Bid Panels';
+                    return (
+                      <tr key={client.id} className="hover:bg-slate-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium text-slate-900">{client.name}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-medium text-red-600">{daysBehind}d</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-slate-600">{stuckModule}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 bg-slate-200 rounded-full h-2">
+                              <div 
+                                className="bg-red-500 h-2 rounded-full" 
+                                style={{ width: `${client.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium text-slate-700">{client.progress}%</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                              SK
+                            </div>
+                            <span className="text-sm text-slate-600">Samuel K.</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => router.push(`/cs-portal/edit-client?client=${encodeURIComponent(client.name)}`)}
+                            className="text-sm font-medium text-[#9F2E2B] hover:text-[#7D2522]"
+                          >
+                            Review →
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Row 3: Charts Side-by-Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Module Completion Funnel */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 className="text-lg font-bold text-slate-900 mb-1">Module Completion Funnel</h2>
+            <p className="text-sm text-slate-600 mb-6">Percentage of clients completing each module</p>
+            <div className="space-y-4">
+              {moduleStages.map((stage, idx) => (
+                <div key={idx}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-slate-700">{stage.name}</span>
+                    <span className="text-sm text-slate-600">
+                      {stage.count} / {moduleStages[0].count} ({stage.percentage}%)
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <div className="w-full bg-slate-200 rounded-full h-8 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] h-8 rounded-full transition-all flex items-center justify-end px-3"
+                        style={{ width: `${stage.percentage}%` }}
+                      >
+                        {stage.percentage > 20 && (
+                          <span className="text-xs font-bold text-white">{stage.count}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Completion Timeline */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 className="text-lg font-bold text-slate-900 mb-1">Active Client Progress</h2>
+            <p className="text-sm text-slate-600 mb-6">Current completion status across all active clients</p>
+            <div className="space-y-3 max-h-[340px] overflow-y-auto">
+              {activeClients.slice(0, 12).map((client) => {
+                const heat = getStatusHeat(client.progress, client.initiationDate, client.projectedGoLiveDate);
+                const color = heat === 'hot' ? 'bg-red-500' : heat === 'warm' ? 'bg-orange-500' : 'bg-green-500';
+                return (
+                  <div key={client.id} className="flex items-center gap-3">
+                    <div className="w-32 text-sm text-slate-700 font-medium truncate flex-shrink-0">
+                      {client.name.split(' ')[0]}
+                    </div>
+                    <div className="flex-1 bg-slate-200 rounded-full h-6 overflow-hidden">
+                      <div 
+                        className={`${color} h-6 rounded-full transition-all flex items-center justify-end px-2`}
+                        style={{ width: `${client.progress}%` }}
+                      >
+                        {client.progress > 15 && (
+                          <span className="text-xs font-bold text-white">{client.progress}%</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 4: Upcoming Go-Lives */}
+        {upcomingGoLives.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+            <div className="border-b border-slate-200 px-6 py-4 bg-green-50">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h2 className="text-lg font-bold text-slate-900">Upcoming Go-Lives</h2>
+                <span className="text-sm text-slate-600">(Next 2 weeks)</span>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                {upcomingGoLives.map((client) => {
+                  const daysUntil = Math.ceil(
+                    (new Date(client.projectedGoLiveDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                  );
+                  const readiness = client.progress >= 90 ? 'green' : client.progress >= 70 ? 'yellow' : 'red';
+                  return (
+                    <div key={client.id} className="flex items-center gap-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-sm font-bold text-slate-900">{client.name}</h3>
+                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                            readiness === 'green' ? 'bg-green-100 text-green-700' :
+                            readiness === 'yellow' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {client.progress}% Ready
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-slate-600">
+                          <span className="flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {new Date(client.projectedGoLiveDate).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </span>
+                          <span className="font-medium">
+                            {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-32 bg-slate-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            readiness === 'green' ? 'bg-green-500' :
+                            readiness === 'yellow' ? 'bg-yellow-500' :
+                            'bg-red-500'
+                          }`}
+                          style={{ width: `${client.progress}%` }}
+                        />
+                      </div>
+                      <button
+                        onClick={() => router.push(`/cs-portal/edit-client?client=${encodeURIComponent(client.name)}`)}
+                        className="text-sm font-medium text-[#9F2E2B] hover:text-[#7D2522] whitespace-nowrap"
+                      >
+                        View Details →
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Table with Tabs */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">All Clients</h2>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-1 mb-4">
+          <button
+            onClick={() => {
+              setActiveTab('active');
+              setCurrentPage(1);
+            }}
+            className={`px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors ${
+              activeTab === 'active'
+                ? 'bg-white text-[#9F2E2B] border-t-2 border-x border-slate-200 border-t-[#9F2E2B]'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            Active ({activeClients.length})
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('completed');
+              setCurrentPage(1);
+            }}
+            className={`px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors ${
+              activeTab === 'completed'
+                ? 'bg-white text-[#9F2E2B] border-t-2 border-x border-slate-200 border-t-[#9F2E2B]'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            Completed ({completedClients.length})
+          </button>
+        </div>
+
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden rounded-tl-none">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
@@ -546,8 +948,8 @@ export default function CSPortalPage() {
             <div className="flex items-center justify-between">
               <div className="text-sm text-slate-600">
                 Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-                <span className="font-medium">{Math.min(endIndex, SAMPLE_CLIENTS.length)}</span> of{' '}
-                <span className="font-medium">{SAMPLE_CLIENTS.length}</span> clients
+                <span className="font-medium">{Math.min(endIndex, displayedClients.length)}</span> of{' '}
+                <span className="font-medium">{displayedClients.length}</span> clients
               </div>
               
               <div className="flex items-center gap-2">
