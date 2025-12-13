@@ -29,7 +29,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
                   {/* Item */}
                   {isClickable ? (
                     <Link
-                      href={item.href}
+                      href={item.href!}
                       className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-[#9F2E2B] transition-colors"
                     >
                       {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
