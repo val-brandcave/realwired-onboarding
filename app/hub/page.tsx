@@ -3,7 +3,7 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useOnboarding, type OnboardingParticipant } from "@/lib/onboarding-context";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { ParticipantSelector } from "./_components/ParticipantSelector";
 import { Snackbar } from "@/components/ui/Snackbar";
 import { ConfiguredBadge } from "@/components/ui/ConfiguredBadge";
@@ -178,7 +178,7 @@ function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   );
 }
 
-export default function HubPage() {
+function HubContent() {
   const { state, updateModuleAssignment, resetModuleProgress, getSectionConfigStatus, expressProductInterest } = useOnboarding();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -939,5 +939,22 @@ export default function HubPage() {
         type="success"
       />
     </MainLayout>
+  );
+}
+
+export default function HubPage() {
+  return (
+    <Suspense fallback={
+      <MainLayout currentStep={0} steps={[]} title="YouConnect Onboarding Hub">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading hub...</p>
+          </div>
+        </div>
+      </MainLayout>
+    }>
+      <HubContent />
+    </Suspense>
   );
 }
