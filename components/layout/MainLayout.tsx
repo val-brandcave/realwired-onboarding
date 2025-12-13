@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { FloatingChatButton } from '@/components/ui/FloatingChatButton';
 import { UserProfileDropdown } from './UserProfileDropdown';
 import { usePathname } from 'next/navigation';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { StickyFooterNav } from '@/components/ui/StickyFooterNav';
 
 interface Step {
   id: string;
@@ -11,12 +13,17 @@ interface Step {
   status: 'completed' | 'in_progress' | 'not_started';
 }
 
+import type { BreadcrumbItem } from '@/components/ui/Breadcrumbs';
+import type { StickyFooterNavProps } from '@/components/ui/StickyFooterNav';
+
 interface MainLayoutProps {
   children: React.ReactNode;
   currentStep?: number;
   steps?: Step[];
   title?: string;
   hideFloatingChat?: boolean;
+  breadcrumbs?: BreadcrumbItem[];
+  footerNav?: StickyFooterNavProps;
 }
 
 interface Notification {
@@ -61,7 +68,9 @@ export function MainLayout({
   children, 
   steps = [],
   title = "YouConnect Onboarding",
-  hideFloatingChat = false
+  hideFloatingChat = false,
+  breadcrumbs,
+  footerNav
 }: MainLayoutProps) {
   const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -192,22 +201,34 @@ export function MainLayout({
         {steps.length > 0 && <ProgressBar steps={steps} />}
       </div>
 
+      {/* Breadcrumbs - Sticky below header */}
+      {breadcrumbs && breadcrumbs.length > 0 && (
+        <Breadcrumbs items={breadcrumbs} />
+      )}
+
       {/* Main Content */}
-      <main className="flex-1">
+      <main className={`flex-1 ${footerNav ? 'pb-24' : ''}`}>
         {children}
       </main>
 
-      {/* Footer - minimal */}
-      <footer className="bg-slate-50 border-t border-border mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <p className="text-xs text-muted-foreground text-center">
-            © {new Date().getFullYear()} RealWired · YouConnect
-          </p>
-        </div>
-      </footer>
+      {/* Footer - Only show if no sticky footer nav */}
+      {!footerNav && (
+        <footer className="bg-slate-50 border-t border-border mt-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <p className="text-xs text-muted-foreground text-center">
+              © {new Date().getFullYear()} RealWired · YouConnect
+            </p>
+          </div>
+        </footer>
+      )}
 
-      {/* Floating Chat Button - Available on all pages (except hub-2 which has unified help center) */}
-      {!hideFloatingChat && pathname !== '/hub-2' && <FloatingChatButton />}
+      {/* Sticky Footer Navigation */}
+      {footerNav && <StickyFooterNav {...footerNav} />}
+
+      {/* Floating Chat Button - Positioned above footer if present */}
+      {!hideFloatingChat && pathname !== '/hub-2' && (
+        <FloatingChatButton bottomOffset={footerNav ? "bottom-24" : "bottom-6"} />
+      )}
 
       {/* Notification Slide-out Panel */}
       {showNotifications && (

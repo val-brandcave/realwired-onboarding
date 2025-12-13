@@ -315,6 +315,7 @@ interface OnboardingState {
   configuredSections: Record<string, SectionConfigStatus>; // NEW: Track CS agent configuration status per section
   projectedGoLiveDate?: string; // ISO date string - set by CS team
   initiationDate?: string; // ISO date string - when onboarding started
+  productInterests: string[]; // NEW: Track which products the client is interested in
   companySetup: CompanySetupData;
   definitions: DefinitionsData;
   users: UsersData;
@@ -347,6 +348,8 @@ interface OnboardingContextType {
   updateProjectedGoLiveDate: (date: string) => void; // NEW: Set projected go-live date
   markSectionConfigured: (sectionId: string, agentName: string) => void; // NEW: Mark section as configured by CS agent
   getSectionConfigStatus: (sectionId: string) => SectionConfigStatus; // NEW: Get configuration status for a section
+  expressProductInterest: (productId: string) => void; // NEW: Express interest in a product
+  removeProductInterest: (productId: string) => void; // NEW: Remove interest in a product
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -374,6 +377,7 @@ const initialState: OnboardingState = {
   ],
   moduleProgress: {}, // Initialize empty - will be populated as user progresses
   configuredSections: {}, // Initialize empty - will be populated as CS agents configure sections
+  productInterests: [], // Initialize empty - will be populated as user expresses interest
   projectedGoLiveDate: '2026-02-12', // Sample projected date - healthy timeline
   initiationDate: '2024-10-28', // Sample initiation date - recent start
   companySetup: {
@@ -989,6 +993,22 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     return state.configuredSections[sectionId] || { isConfigured: false };
   }, [state.configuredSections]);
 
+  const expressProductInterest = useCallback((productId: string) => {
+    setState(prev => ({
+      ...prev,
+      productInterests: prev.productInterests.includes(productId)
+        ? prev.productInterests
+        : [...prev.productInterests, productId]
+    }));
+  }, []);
+
+  const removeProductInterest = useCallback((productId: string) => {
+    setState(prev => ({
+      ...prev,
+      productInterests: prev.productInterests.filter(id => id !== productId)
+    }));
+  }, []);
+
   const canProceed = useCallback((module: OnboardingModule): boolean => {
     const s = state;
     
@@ -1045,6 +1065,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         updateProjectedGoLiveDate,
         markSectionConfigured,
         getSectionConfigStatus,
+        expressProductInterest,
+        removeProductInterest,
       }}
     >
       {children}

@@ -74,6 +74,17 @@ export default function VendorTypesConfigurePage() {
       currentStep={0}
       steps={steps}
       title="Vendors Setup"
+      breadcrumbs={[
+        { label: "Home", href: "/hub", icon: (<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>) },
+        { label: "Vendors", href: "/vendors-intro" },
+        { label: "Vendor Types" },
+      ]}
+      footerNav={{
+        previousLabel: "Back",
+        onPrevious: () => router.push('/vendors-intro'),
+        nextLabel: "Next: Classifications",
+        onNext: handleContinue,
+      }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -245,21 +256,6 @@ export default function VendorTypesConfigurePage() {
               Add Vendor Type
             </button>
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between pt-4">
-              <button
-                onClick={() => router.push('/vendors-intro')}
-                className="px-4 py-2 text-sm font-medium text-secondary-foreground bg-card border border-input rounded-lg hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={handleContinue}
-                className="px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all shadow-lg hover:shadow-xl"
-              >
-                Next: Classifications →
-              </button>
-            </div>
           </div>
 
           {/* Educational Panel */}

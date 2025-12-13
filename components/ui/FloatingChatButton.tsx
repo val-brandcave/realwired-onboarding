@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { ChatBot } from './ChatBot';
 
-export function FloatingChatButton() {
+interface FloatingChatButtonProps {
+  bottomOffset?: string; // e.g., "bottom-6" or "bottom-24"
+}
+
+export function FloatingChatButton({ bottomOffset = "bottom-6" }: FloatingChatButtonProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -12,7 +16,7 @@ export function FloatingChatButton() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-[#9F2E2B] to-[#7D2522] text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center z-50 group"
+          className={`fixed ${bottomOffset} right-6 w-14 h-14 bg-gradient-to-br from-[#9F2E2B] to-[#7D2522] text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center z-50 group`}
           aria-label="Open chat assistant"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

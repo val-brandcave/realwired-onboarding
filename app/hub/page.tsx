@@ -2,12 +2,16 @@
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useOnboarding, type OnboardingParticipant } from "@/lib/onboarding-context";
-import { useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
 import { ParticipantSelector } from "./_components/ParticipantSelector";
 import { Snackbar } from "@/components/ui/Snackbar";
 import { ConfiguredBadge } from "@/components/ui/ConfiguredBadge";
 import { CSTeamDisplay } from "./_components/CSTeamDisplay";
+import { HubTabs } from "./_components/HubTabs";
+import { ProductDiscovery } from "./_components/ProductDiscovery";
+import { CSAgentGrid } from "./_components/CSAgentGrid";
+import { MeetingRequestForm } from "./_components/MeetingRequestForm";
 
 // Contact Modal Component
 function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -175,12 +179,24 @@ function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 }
 
 export default function HubPage() {
-  const { state, updateModuleAssignment, resetModuleProgress, getSectionConfigStatus } = useOnboarding();
+  const { state, updateModuleAssignment, resetModuleProgress, getSectionConfigStatus, expressProductInterest } = useOnboarding();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"onboarding" | "products" | "customer-success">("onboarding");
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [showSnackbar, setShowSnackbar] = useState(false);
+
+  // Sync tab with URL params
+  useEffect(() => {
+    const tab = searchParams?.get('tab');
+    if (tab === 'products' || tab === 'customer-success') {
+      setActiveTab(tab);
+    } else if (tab === 'onboarding' || !tab) {
+      setActiveTab('onboarding');
+    }
+  }, [searchParams]);
 
   // Target completion dates set by CS agent (same as edit-client page)
   const moduleTargetDates: Record<string, string> = {
@@ -413,9 +429,15 @@ export default function HubPage() {
       steps={[]}
       title="YouConnect Onboarding Hub"
     >
+      {/* Tabbed Navigation - Top Most */}
+      <HubTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Projected Go-Live Date Banner */}
-        {state.projectedGoLiveDate && (
+        {/* Onboarding Tab Content */}
+        {activeTab === "onboarding" && (
+          <>
+            {/* Projected Go-Live Date Banner */}
+            {state.projectedGoLiveDate && (
           <div className={`mb-6 rounded-xl p-4 border-2 ${
             daysUntilGoLive !== null && daysUntilGoLive < 0 
               ? 'bg-red-50 border-red-300'
@@ -628,9 +650,6 @@ export default function HubPage() {
 
         {/* Contact Modal */}
         <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} />
-
-        {/* CS Team Display */}
-        <CSTeamDisplay />
 
         {/* All Modules - Accordion */}
         <div className="bg-card border border-border rounded-lg">
@@ -877,6 +896,39 @@ export default function HubPage() {
             </div>
           )}
         </div>
+          </>
+        )}
+
+        {/* Products Tab Content */}
+        {activeTab === "products" && (
+          <ProductDiscovery
+            interestedProducts={state.productInterests}
+            onExpressInterest={expressProductInterest}
+          />
+        )}
+
+        {/* Customer Success Tab Content */}
+        {activeTab === "customer-success" && (
+          <div className="py-8 space-y-12">
+            {/* Header - Center Aligned */}
+            <div className="text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                Your Customer Success Team
+              </h2>
+              <p className="text-lg text-gray-600">
+                Meet your dedicated team of experts ready to support you throughout your onboarding journey and beyond.
+              </p>
+            </div>
+
+            {/* Agent Carousel */}
+            <CSAgentGrid onRequestMeeting={() => {}} />
+
+            {/* Meeting Request Section - Full Width */}
+            <div>
+              <MeetingRequestForm />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Snackbar Notifications */}

@@ -6,6 +6,7 @@ import { useOnboarding } from '@/lib/onboarding-context';
 import { ConfiguredBadge } from '@/components/ui/ConfiguredBadge';
 import { DonutChart } from '@/components/ui/DonutChart';
 import { SmallDonut } from '@/components/ui/SmallDonut';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 // Module structure (same as client-onboarding)
 interface ModuleStep {
@@ -770,6 +771,12 @@ function EditClientContent() {
           </div>
         </div>
       </header>
+
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={[
+        { label: "CS Portal", href: "/cs-portal" },
+        { label: clientName || "Client Configuration" },
+      ]} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">

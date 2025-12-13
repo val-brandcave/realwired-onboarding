@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Snackbar } from '@/components/ui/Snackbar';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 // Sample client data
 interface Client {

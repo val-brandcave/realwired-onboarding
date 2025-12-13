@@ -28,7 +28,20 @@ export default function ITChecklist() {
   const canProceed = emailDomains && urlAccess;
 
   return (
-    <MainLayout>
+    <MainLayout
+      breadcrumbs={[
+        { label: "Home", href: "/hub", icon: (<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>) },
+        { label: "IT Checklist", href: "/it-checklist-intro" },
+        { label: "Verify Setup" },
+      ]}
+      footerNav={{
+        previousLabel: "Back to Hub",
+        onPrevious: () => router.push('/hub'),
+        nextLabel: canProceed ? "Complete IT Checklist" : "Complete all checklist items",
+        onNext: handleContinue,
+        nextDisabled: !canProceed,
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6 text-center">
@@ -155,26 +168,6 @@ export default function ITChecklist() {
           )}
         </div>
 
-            {/* Footer Actions */}
-            <div className="mt-6 flex items-center justify-between">
-              <button
-                onClick={() => router.push('/hub')}
-                className="px-4 py-2 text-sm font-medium text-secondary-foreground bg-card border border-input rounded-lg hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
-              >
-                ← Back to Hub
-              </button>
-              <button
-                onClick={handleContinue}
-                disabled={!canProceed}
-                className={`px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl ${
-                  canProceed
-                    ? 'bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] hover:from-[#8A2826] hover:to-[#6B1F1D] text-white'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                }`}
-              >
-                Complete IT Checklist →
-              </button>
-            </div>
           </div>
 
           {/* Educational Sidebar (1/3) */}

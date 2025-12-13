@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { DonutChart } from '@/components/ui/DonutChart';
 import { SmallDonut } from '@/components/ui/SmallDonut';
 
@@ -364,6 +365,12 @@ function ClientOnboardingContent() {
           </div>
         </div>
       </header>
+
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={[
+        { label: "CS Portal", href: "/cs-portal" },
+        { label: orgName || "Client Onboarding" },
+      ]} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
