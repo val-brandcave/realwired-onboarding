@@ -12,7 +12,6 @@ import { HubTabs } from "./_components/HubTabs";
 import { ProductDiscovery } from "./_components/ProductDiscovery";
 import { CSAgentGrid } from "./_components/CSAgentGrid";
 import { MeetingRequestForm } from "./_components/MeetingRequestForm";
-import { CustomerSuccessSubTabs } from "./_components/CustomerSuccessSubTabs";
 import { TicketList, type Ticket } from "./_components/TicketList";
 import { SubmitTicketModal, type NewTicketData } from "./_components/SubmitTicketModal";
 
@@ -185,8 +184,7 @@ function HubContent() {
   const { state, updateModuleAssignment, resetModuleProgress, getSectionConfigStatus, expressProductInterest } = useOnboarding();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<"onboarding" | "products" | "customer-success">("onboarding");
-  const [csSubTab, setCsSubTab] = useState<"team" | "tickets">("team");
+  const [activeTab, setActiveTab] = useState<"onboarding" | "products" | "support-tickets" | "customer-success">("onboarding");
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showSubmitTicketModal, setShowSubmitTicketModal] = useState(false);
@@ -278,8 +276,8 @@ function HubContent() {
   // Sync tab with URL params
   useEffect(() => {
     const tab = searchParams?.get('tab');
-    if (tab === 'products' || tab === 'customer-success') {
-      setActiveTab(tab);
+    if (tab === 'products' || tab === 'support-tickets' || tab === 'customer-success') {
+      setActiveTab(tab as "products" | "support-tickets" | "customer-success");
     } else if (tab === 'onboarding' || !tab) {
       setActiveTab('onboarding');
     }
@@ -1015,67 +1013,59 @@ function HubContent() {
           />
         )}
 
-        {/* Customer Success Tab Content */}
-        {activeTab === "customer-success" && (
-          <div className="py-8">
-            {/* Sub-Tabs */}
-            <CustomerSuccessSubTabs activeTab={csSubTab} onTabChange={setCsSubTab} />
+        {/* Support Tickets Tab Content */}
+        {activeTab === "support-tickets" && (
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="max-w-5xl mx-auto">
+              {/* Header */}
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                  Support Tickets
+                </h2>
+                <p className="text-lg text-gray-600">
+                  View your support tickets and submit new ones. Our team typically responds within 2 hours.
+                </p>
+              </div>
 
-            {/* "Your Team" Sub-Tab Content */}
-            {csSubTab === "team" && (
-              <div className="space-y-12">
-                {/* Header - Center Aligned */}
-                <div className="text-center max-w-3xl mx-auto">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                    Your Customer Success Team
+              {/* Ticket List */}
+              <TicketList 
+                tickets={tickets} 
+                onSubmitTicket={() => setShowSubmitTicketModal(true)} 
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Customer Success Team Tab Content */}
+        {activeTab === "customer-success" && (
+          <div className="py-8 space-y-12">
+            {/* Header - Center Aligned */}
+            <div className="text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                Your Customer Success Team
+              </h2>
+              <p className="text-lg text-gray-600">
+                Meet your dedicated team of experts ready to support you throughout your onboarding journey and beyond.
+              </p>
+            </div>
+
+            {/* Agent Grid */}
+            <CSAgentGrid onRequestMeeting={() => {}} />
+
+            {/* Meeting Request Section */}
+            <div className="border-t border-gray-200 pt-12">
+              <div className="max-w-3xl mx-auto">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    Schedule a Meeting
                   </h2>
-                  <p className="text-lg text-gray-600">
-                    Meet your dedicated team of experts ready to support you throughout your onboarding journey and beyond.
+                  <p className="text-gray-600">
+                    Need personalized help? Schedule a meeting with your Customer Success team.
                   </p>
                 </div>
-
-                {/* Agent Grid */}
-                <CSAgentGrid onRequestMeeting={() => {}} />
-
-                {/* Meeting Request Section */}
-                <div className="border-t border-gray-200 pt-12">
-                  <div className="max-w-3xl mx-auto">
-                    <div className="text-center mb-8">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                        Schedule a Meeting
-                      </h2>
-                      <p className="text-gray-600">
-                        Need personalized help? Schedule a meeting with your Customer Success team.
-                      </p>
-                    </div>
-                    <MeetingRequestForm />
-                  </div>
-                </div>
+                <MeetingRequestForm />
               </div>
-            )}
-
-            {/* "Support Tickets" Sub-Tab Content */}
-            {csSubTab === "tickets" && (
-              <div className="px-4 sm:px-6 lg:px-8">
-                <div className="max-w-5xl mx-auto">
-                  {/* Header */}
-                  <div className="mb-8">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                      Support Tickets
-                    </h2>
-                    <p className="text-lg text-gray-600">
-                      View your support tickets and submit new ones. Our team typically responds within 2 hours.
-                    </p>
-                  </div>
-
-                  {/* Ticket List */}
-                  <TicketList 
-                    tickets={tickets} 
-                    onSubmitTicket={() => setShowSubmitTicketModal(true)} 
-                  />
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
       </div>
