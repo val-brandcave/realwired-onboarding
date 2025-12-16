@@ -90,6 +90,7 @@ export interface PropertyRecordField {
   systemRequired?: boolean; // System-required field that cannot be disabled or made optional
   systemFixed?: boolean; // Cannot be dragged/reordered
   placeholder?: string;
+  readonly?: boolean; // For fields that shouldn't be edited
   order?: number; // For ordering within category
   column?: 1 | 2; // Which column the field appears in
 }
@@ -167,8 +168,12 @@ export interface DefinitionsData {
   properties: PropertyDefinition[];
   propertyRecordFields: PropertyRecordField[]; // New: fields for property records
   selectedSamplePropertyId?: string; // New: which sample property was selected for preview
+  selectedPropertyTemplate?: string; // Template ID for property fields
+  propertyFieldsConfigured?: boolean; // Whether property fields have been configured
   requestFormFields: RequestFormField[]; // New: fields for request forms
   selectedSampleRequestId?: string; // New: which sample request was selected for preview
+  selectedRequestTemplate?: string; // Template ID for request fields
+  requestFieldsConfigured?: boolean; // Whether request fields have been configured
   orderFormFields: OrderFormField[]; // Legacy - kept for backward compatibility
   documentTypes: string[];
   rejectReasons: string[];

@@ -28,7 +28,7 @@ export function ProductDetailsModal({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -63,6 +63,21 @@ export function ProductDetailsModal({
                 )}
               </div>
             </div>
+
+            {/* Video (if available) */}
+            {product.videoUrl && (
+              <div className="mb-6">
+                <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden shadow-lg">
+                  <iframe
+                    src={product.videoUrl}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={`${product.name} demo video`}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             <p className="text-gray-700 text-base mb-6 leading-relaxed">
@@ -134,7 +149,7 @@ export function ProductDetailsModal({
                   <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">Interested in this product?</p>
                     <p>
-                      Express your interest and our team will reach out to discuss pricing, implementation, and how this product can benefit your organization.
+                      Talk to our sales team to discuss pricing, implementation, and how this product can benefit your organization.
                     </p>
                   </div>
                 </div>
@@ -181,12 +196,12 @@ export function ProductDetailsModal({
                           clipRule="evenodd"
                         />
                       </svg>
-                      Interest Expressed
+                      Sales Contacted
                     </span>
                   ) : product.status === "coming-soon" ? (
                     "Available Soon"
                   ) : (
-                    "Express Interest"
+                    "Talk to Sales"
                   )}
                 </button>
               )}

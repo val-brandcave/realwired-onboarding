@@ -9,6 +9,7 @@ import { DraggableField } from "@/components/property-config/DraggableField";
 import { FieldSettingsDrawer } from "@/components/property-config/FieldSettingsDrawer";
 import { AddFieldModal } from "@/components/property-config/AddFieldModal";
 import type { FieldInputType } from "@/components/property-config/AddFieldModal";
+import { Stepper } from "@/components/ui/Stepper";
 
 export default function RequestFormAdvancedPage() {
   const { state, updateDefinitions, updateModuleProgress } = useOnboarding();
@@ -171,9 +172,33 @@ export default function RequestFormAdvancedPage() {
   };
 
   const handleContinue = () => {
-    updateDefinitions({ requestFormFields: fields });
-    router.push('/definitions/bid-panels');
+    // Save and exit edit mode
+    updateDefinitions({ 
+      requestFormFields: fields,
+      requestFieldsConfigured: true 
+    });
+    router.push('/definitions/request-form/preview');
   };
+
+  const handleExitEditMode = () => {
+    // Save fields and return to preview
+    updateDefinitions({ 
+      requestFormFields: fields,
+      requestFieldsConfigured: true 
+    });
+    router.push('/definitions/request-form/preview');
+  };
+
+  // ESC key handler to exit edit mode
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleExitEditMode();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedField = fields.find(f => f.id === selectedFieldId) || null;
 
@@ -196,12 +221,36 @@ export default function RequestFormAdvancedPage() {
         { label: "Advanced Details" },
       ]}
       footerNav={{
-        previousLabel: "Back to Overview",
+        previousLabel: "← Back to Overview",
         onPrevious: handleBack,
-        nextLabel: "Save & Continue",
+        nextLabel: "Save & Exit Edit Mode",
         onNext: handleContinue,
       }}
     >
+      {/* Exit Edit Mode Banner */}
+      <div className="bg-blue-50 border-b border-blue-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span className="font-medium text-blue-900">Edit Mode Active</span>
+              <span className="text-blue-700">- Drag, drop, and configure fields</span>
+            </div>
+            <button
+              onClick={handleExitEditMode}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 hover:text-blue-900 hover:bg-blue-100 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Exit Edit Mode (ESC)
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div 
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
         onClick={(e) => {
@@ -211,10 +260,23 @@ export default function RequestFormAdvancedPage() {
           }
         }}
       >
+        {/* Stepper */}
+        <Stepper
+          currentStep={2}
+          totalSteps={2}
+          stepLabels={['Overview Fields', 'Advanced Details']}
+          onStepClick={(step) => {
+            if (step === 1) {
+              updateDefinitions({ requestFormFields: fields });
+              router.push('/definitions/request-form/configure/overview');
+            }
+          }}
+        />
+
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-            Configure Request Form - Advanced Details
+            Edit Request Form - Advanced Details
           </h1>
           <p className="text-base text-muted-foreground">
             Configure additional request-specific information and specifications

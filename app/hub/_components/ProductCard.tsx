@@ -11,6 +11,7 @@ export interface Product {
   isIncluded?: boolean;
   icon: React.ReactNode;
   learnMoreUrl?: string;
+  videoUrl?: string;
 }
 
 interface ProductCardProps {
@@ -42,7 +43,7 @@ export function ProductCard({
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 items-end">
         {product.isIncluded && (
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
-            ✓ Included with YouConnect
+            ✓ Active
           </span>
         )}
         {product.status === "coming-soon" && (
@@ -124,12 +125,12 @@ export function ProductCard({
                       clipRule="evenodd"
                     />
                   </svg>
-                  Interest Expressed
+                  Sales Contacted
                 </span>
               ) : product.status === "coming-soon" ? (
                 "Coming Soon"
               ) : (
-                "Express Interest"
+                "Talk to Sales"
               )}
             </button>
           )}

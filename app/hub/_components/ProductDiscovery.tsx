@@ -29,6 +29,7 @@ export function ProductDiscovery({
         "Integration with existing workflows",
       ],
       status: "ready",
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -53,6 +54,7 @@ export function ProductDiscovery({
       ],
       status: "ready",
       isIncluded: true,
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path

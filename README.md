@@ -211,10 +211,32 @@ node scripts/take-screenshots.js
 
 ## Documentation
 
-- **ROUTES-SUMMARY.md**: Complete route documentation and navigation flows
-- **CX Agent Portal**: See `ROUTES-SUMMARY.md` (CX Agent Portal section) for routes and features
+### 📚 Documentation Hub
+- **[DOCUMENTATION-INDEX.md](DOCUMENTATION-INDEX.md)** - Master guide to all documentation (START HERE)
+- **[ROUTES-SUMMARY.md](ROUTES-SUMMARY.md)** - Complete route documentation and navigation flows
+
+### 📁 Organized Documentation
+```
+docs/
+├── features/              Current feature documentation
+│   ├── MODULE-DATES/     Module completion dates (8 files)
+│   ├── FIELDS/           Property & request fields (5 files)
+│   ├── CS-PORTAL/        CS Agent Portal features
+│   └── OTHER-FEATURES/   Chat, bid panels, checkboxes, etc.
+│
+├── implementation/        Implementation guides & roadmaps
+│   └── session-summaries/ Historical session notes
+│
+└── archive/              Superseded/historical documentation
+    ├── old-summaries/    Old session summaries
+    └── deprecated/       Archived feature docs
+```
+
+### Additional Context
 - **context/features/**: Feature-specific PRDs
 - **documents/**: Onboarding materials and reference docs
+
+**👉 New to the project? Start with [DOCUMENTATION-INDEX.md](DOCUMENTATION-INDEX.md)**
 
 ## Testing
 

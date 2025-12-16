@@ -12,6 +12,9 @@ import { HubTabs } from "./_components/HubTabs";
 import { ProductDiscovery } from "./_components/ProductDiscovery";
 import { CSAgentGrid } from "./_components/CSAgentGrid";
 import { MeetingRequestForm } from "./_components/MeetingRequestForm";
+import { CustomerSuccessSubTabs } from "./_components/CustomerSuccessSubTabs";
+import { TicketList, type Ticket } from "./_components/TicketList";
+import { SubmitTicketModal, type NewTicketData } from "./_components/SubmitTicketModal";
 
 // Contact Modal Component
 function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -183,10 +186,94 @@ function HubContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<"onboarding" | "products" | "customer-success">("onboarding");
+  const [csSubTab, setCsSubTab] = useState<"team" | "tickets">("team");
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [showSubmitTicketModal, setShowSubmitTicketModal] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [showSnackbar, setShowSnackbar] = useState(false);
+  
+  // Sample tickets data
+  const [tickets, setTickets] = useState<Ticket[]>([
+    {
+      id: "T-105",
+      subject: "Property field configuration question",
+      category: "Configuration Help",
+      priority: "medium",
+      status: "open",
+      description: "I need help understanding which fields to enable for residential properties. Should I include flood zone for all properties or only certain types?",
+      createdDate: "Dec 16, 2025",
+      updatedDate: "Dec 16, 2025",
+      assignedAgent: "Sarah Johnson",
+    },
+    {
+      id: "T-104",
+      subject: "Routing rule clarification needed",
+      category: "Feature Question",
+      priority: "high",
+      status: "in-progress",
+      description: "Need clarification on how routing rules prioritize between request type and assigned area. Which takes precedence?",
+      createdDate: "Dec 15, 2025",
+      updatedDate: "Dec 16, 2025",
+      assignedAgent: "Emily Rodriguez",
+      comments: [
+        {
+          id: "c1",
+          author: "Emily Rodriguez",
+          authorType: "agent",
+          message: "Great question! Request Type routing takes precedence over Assigned Area. I'll send you a detailed guide on routing hierarchy.",
+          timestamp: "Dec 16, 2025 10:30 AM",
+        },
+      ],
+    },
+    {
+      id: "T-103",
+      subject: "SSO integration setup assistance",
+      category: "Technical Issue",
+      priority: "urgent",
+      status: "in-progress",
+      description: "Having trouble uploading the SSO certificate. Getting an error message about invalid format. Using Azure AD.",
+      createdDate: "Dec 15, 2025",
+      updatedDate: "Dec 15, 2025",
+      assignedAgent: "David Patterson",
+      comments: [
+        {
+          id: "c1",
+          author: "David Patterson",
+          authorType: "agent",
+          message: "I'm on it! Can you send me the certificate file? The format should be .cer or .pem. I'll help you get this resolved today.",
+          timestamp: "Dec 15, 2025 2:15 PM",
+        },
+      ],
+    },
+    {
+      id: "T-102",
+      subject: "Training on vendor management",
+      category: "Training Request",
+      priority: "low",
+      status: "resolved",
+      description: "Would like to schedule a training session on how to best use the vendor management module and routing.",
+      createdDate: "Dec 14, 2025",
+      updatedDate: "Dec 15, 2025",
+      assignedAgent: "Emily Rodriguez",
+      comments: [
+        {
+          id: "c1",
+          author: "Emily Rodriguez",
+          authorType: "agent",
+          message: "I've scheduled a training session for Dec 18 at 2 PM. You'll receive a calendar invite shortly. Looking forward to it!",
+          timestamp: "Dec 15, 2025 9:00 AM",
+        },
+        {
+          id: "c2",
+          author: "John Smith",
+          authorType: "user",
+          message: "Perfect, thank you!",
+          timestamp: "Dec 15, 2025 9:15 AM",
+        },
+      ],
+    },
+  ]);
 
   // Sync tab with URL params
   useEffect(() => {
@@ -402,6 +489,25 @@ function HubContent() {
   const nextModule = modules.find(m => !m.completed);
   const module1Completed = modules[0].completed;
   
+  // Handle ticket submission
+  const handleSubmitTicket = (ticketData: NewTicketData) => {
+    const newTicket: Ticket = {
+      id: `T-${Date.now().toString().slice(-3)}`,
+      subject: ticketData.subject,
+      category: ticketData.category,
+      priority: ticketData.priority,
+      status: "open",
+      description: ticketData.description,
+      createdDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      updatedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      assignedAgent: ticketData.assignedAgent === "auto" ? "Sarah Johnson" : ticketData.assignedAgent,
+    };
+    
+    setTickets(prev => [newTicket, ...prev]);
+    setSnackbarMessage(`Ticket ${newTicket.id} submitted successfully!`);
+    setShowSnackbar(true);
+  };
+  
   // Determine status for each module based on assignment
   const getModuleStatus = (module: typeof modules[0], index: number) => {
     if (module.completed) return 'completed';
@@ -472,13 +578,31 @@ function HubContent() {
                 </div>
                 <div>
                   <div className="text-xs font-medium text-slate-600 uppercase tracking-wide">Projected Go-Live Date</div>
-                  <div className="text-lg font-bold text-slate-900">
-                    {new Date(state.projectedGoLiveDate).toLocaleDateString('en-US', { 
-                      weekday: 'long',
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
+                  <div className="flex items-center gap-2">
+                    <div className="text-lg font-bold text-slate-900">
+                      {new Date(state.projectedGoLiveDate).toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                      daysUntilGoLive !== null && daysUntilGoLive < 0 
+                        ? 'bg-red-100 text-red-700'
+                        : daysUntilGoLive !== null && daysUntilGoLive <= 7 
+                        ? 'bg-orange-100 text-orange-700'
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      {daysUntilGoLive !== null && daysUntilGoLive < 0 
+                        ? 'Behind'
+                        : daysUntilGoLive !== null && daysUntilGoLive <= 7 
+                        ? 'Behind'
+                        : completedModules === modules.length
+                        ? 'On Track'
+                        : 'On Track'
+                      }
+                    </span>
                   </div>
                 </div>
               </div>
@@ -504,22 +628,6 @@ function HubContent() {
                     </div>
                   </div>
                 )}
-                <div className={`px-4 py-2 rounded-lg font-semibold text-sm ${
-                  daysUntilGoLive !== null && daysUntilGoLive < 0 
-                    ? 'bg-red-100 text-red-700'
-                    : daysUntilGoLive !== null && daysUntilGoLive <= 7 
-                    ? 'bg-orange-100 text-orange-700'
-                    : 'bg-green-100 text-green-700'
-                }`}>
-                  {daysUntilGoLive !== null && daysUntilGoLive < 0 
-                    ? 'Behind'
-                    : daysUntilGoLive !== null && daysUntilGoLive <= 7 
-                    ? 'Behind'
-                    : completedModules === modules.length
-                    ? 'On Track'
-                    : 'On Track'
-                  }
-                </div>
               </div>
             </div>
           </div>
@@ -909,24 +1017,65 @@ function HubContent() {
 
         {/* Customer Success Tab Content */}
         {activeTab === "customer-success" && (
-          <div className="py-8 space-y-12">
-            {/* Header - Center Aligned */}
-            <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                Your Customer Success Team
-              </h2>
-              <p className="text-lg text-gray-600">
-                Meet your dedicated team of experts ready to support you throughout your onboarding journey and beyond.
-              </p>
-            </div>
+          <div className="py-8">
+            {/* Sub-Tabs */}
+            <CustomerSuccessSubTabs activeTab={csSubTab} onTabChange={setCsSubTab} />
 
-            {/* Agent Carousel */}
-            <CSAgentGrid onRequestMeeting={() => {}} />
+            {/* "Your Team" Sub-Tab Content */}
+            {csSubTab === "team" && (
+              <div className="space-y-12">
+                {/* Header - Center Aligned */}
+                <div className="text-center max-w-3xl mx-auto">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                    Your Customer Success Team
+                  </h2>
+                  <p className="text-lg text-gray-600">
+                    Meet your dedicated team of experts ready to support you throughout your onboarding journey and beyond.
+                  </p>
+                </div>
 
-            {/* Meeting Request Section - Full Width */}
-            <div>
-              <MeetingRequestForm />
-            </div>
+                {/* Agent Grid */}
+                <CSAgentGrid onRequestMeeting={() => {}} />
+
+                {/* Meeting Request Section */}
+                <div className="border-t border-gray-200 pt-12">
+                  <div className="max-w-3xl mx-auto">
+                    <div className="text-center mb-8">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        Schedule a Meeting
+                      </h2>
+                      <p className="text-gray-600">
+                        Need personalized help? Schedule a meeting with your Customer Success team.
+                      </p>
+                    </div>
+                    <MeetingRequestForm />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* "Support Tickets" Sub-Tab Content */}
+            {csSubTab === "tickets" && (
+              <div className="px-4 sm:px-6 lg:px-8">
+                <div className="max-w-5xl mx-auto">
+                  {/* Header */}
+                  <div className="mb-8">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                      Support Tickets
+                    </h2>
+                    <p className="text-lg text-gray-600">
+                      View your support tickets and submit new ones. Our team typically responds within 2 hours.
+                    </p>
+                  </div>
+
+                  {/* Ticket List */}
+                  <TicketList 
+                    tickets={tickets} 
+                    onSubmitTicket={() => setShowSubmitTicketModal(true)} 
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -937,6 +1086,13 @@ function HubContent() {
         isVisible={showSnackbar}
         onClose={() => setShowSnackbar(false)}
         type="success"
+      />
+
+      {/* Submit Ticket Modal */}
+      <SubmitTicketModal
+        isOpen={showSubmitTicketModal}
+        onClose={() => setShowSubmitTicketModal(false)}
+        onSubmit={handleSubmitTicket}
       />
     </MainLayout>
   );

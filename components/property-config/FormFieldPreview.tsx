@@ -1,0 +1,164 @@
+"use client";
+
+import type { PropertyRecordField, RequestFormField } from "@/lib/onboarding-context";
+
+interface FormFieldPreviewProps {
+  field: PropertyRecordField | RequestFormField;
+}
+
+// Standard placeholder options for common dropdown types
+const PLACEHOLDER_OPTIONS: Record<string, string[]> = {
+  'property-category': ['Single Family Residential', 'Multi-Family Residential', 'Commercial', 'Industrial', 'Land', 'Mixed Use'],
+  'property-type': ['Single Family Home', 'Condo', 'Townhouse', 'Duplex', 'Triplex', 'Fourplex'],
+  'state': ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'],
+  'site-area-unit': ['Square Feet', 'Acres', 'Units'],
+  'building-size-unit': ['Square Feet', 'Square Meters'],
+  'excess-land-unit': ['Acres', 'Square Feet'],
+  'ownership-type': ['Fee Simple', 'Leasehold', 'Life Estate', 'Easement'],
+  'property-status': ['Existing', 'Under Construction', 'Proposed', 'Conversion'],
+  'flood-zone': ['Zone A', 'Zone AE', 'Zone AH', 'Zone AO', 'Zone X', 'Zone D'],
+  'reg-b-dwelling': ['Yes', 'No'],
+  'reg-b-first-mortgage': ['Yes', 'No'],
+  'request-type': ['Purchase Appraisal', 'Refinance Appraisal', 'HELOC Appraisal', 'Construction Appraisal', 'FHA Appraisal', 'Phase 1 ESA', 'Phase 2 ESA'],
+  'request-purpose': ['Purchase', 'Refinance', 'Home Equity', 'Construction', 'Portfolio Review'],
+  'ordering-choices': ['Order Now', 'Engage Only', 'Bid Only', 'Hold for Review'],
+  'loan-type': ['Conventional', 'FHA', 'VA', 'USDA', 'Jumbo', 'Portfolio'],
+  'risk-rating': ['Low', 'Medium', 'High', 'Very High'],
+  'payment-method': ['ACH', 'Check', 'Credit Card', 'Wire Transfer'],
+  'report-format': ['URAR 1004', 'Desktop', 'Drive-By', '2055', '1025', 'Narrative'],
+  'approach-to-value': ['Sales Comparison', 'Cost Approach', 'Income Approach'],
+  'inspection-requirements': ['Full Interior/Exterior', 'Exterior Only', 'Desktop (No Inspection)', 'Drive-By'],
+};
+
+export function FormFieldPreview({ field }: FormFieldPreviewProps) {
+  const fieldOptions = field.options || PLACEHOLDER_OPTIONS[field.id] || [];
+  
+  return (
+    <div className="space-y-1.5">
+      {/* Label */}
+      <label className="block text-sm font-medium text-gray-900">
+        {field.customLabel || field.label}
+        {field.required && <span className="text-red-600 ml-1">*</span>}
+        {field.systemRequired && (
+          <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">
+            System
+          </span>
+        )}
+        {field.readonly && (
+          <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-medium">
+            Read-only
+          </span>
+        )}
+      </label>
+
+      {/* Input based on type */}
+      {field.type === 'text' && (
+        <input
+          type="text"
+          disabled
+          placeholder={field.placeholder || `Enter ${field.label?.toLowerCase()}`}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+        />
+      )}
+
+      {field.type === 'email' && (
+        <input
+          type="email"
+          disabled
+          placeholder={field.placeholder || "email@example.com"}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+        />
+      )}
+
+      {field.type === 'tel' && (
+        <input
+          type="tel"
+          disabled
+          placeholder={field.placeholder || "(555) 123-4567"}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+        />
+      )}
+
+      {field.type === 'number' && (
+        <input
+          type="number"
+          disabled
+          placeholder={field.placeholder || "0"}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+        />
+      )}
+
+      {field.type === 'date' && (
+        <input
+          type="date"
+          disabled
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+        />
+      )}
+
+      {field.type === 'textarea' && (
+        <textarea
+          disabled
+          rows={3}
+          placeholder={field.placeholder || `Enter ${field.label?.toLowerCase()}`}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed resize-none"
+        />
+      )}
+
+      {field.type === 'select' && (
+        <select
+          disabled={false}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer hover:border-[#9F2E2B] transition-colors"
+        >
+          <option value="">Select {field.label?.toLowerCase()}</option>
+          {fieldOptions.map((option, idx) => (
+            <option key={idx} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {field.type === 'multiselect' && (
+        <select
+          disabled={false}
+          multiple
+          size={4}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700"
+        >
+          {fieldOptions.map((option, idx) => (
+            <option key={idx} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {field.type === 'checkbox' && fieldOptions.length > 0 && (
+        <div className="space-y-2 p-3 border border-gray-300 rounded-lg bg-gray-50">
+          {fieldOptions.map((option, idx) => (
+            <label key={idx} className="flex items-center gap-2 text-sm text-gray-600 cursor-not-allowed">
+              <input
+                type="checkbox"
+                disabled
+                className="w-4 h-4 text-[#9F2E2B] border-gray-300 rounded cursor-not-allowed"
+              />
+              <span>{option}</span>
+            </label>
+          ))}
+        </div>
+      )}
+
+      {field.type === 'file' && (
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+          <svg className="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <p className="text-sm text-gray-500">File upload</p>
+          <p className="text-xs text-gray-400 mt-1">(Disabled in preview)</p>
+        </div>
+      )}
+    </div>
+  );
+}
+

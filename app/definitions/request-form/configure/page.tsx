@@ -6,16 +6,16 @@ import { useRouter } from "next/navigation";
 export default function RequestFormConfigurePage() {
   const router = useRouter();
   
-  // Redirect to overview page (Step 1 of 2)
+  // Redirect to templates page
   useEffect(() => {
-    router.replace('/definitions/request-form/configure/overview');
+    router.replace('/definitions/request-form/templates');
   }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
         <div className="animate-spin w-8 h-8 border-4 border-[#9F2E2B] border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-gray-600">Redirecting to Overview...</p>
+        <p className="text-gray-600">Redirecting to Templates...</p>
       </div>
     </div>
   );
