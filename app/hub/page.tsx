@@ -1015,30 +1015,28 @@ function HubContent() {
 
         {/* Support Tickets Tab Content */}
         {activeTab === "support-tickets" && (
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
-              {/* Header */}
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  Support Tickets
-                </h2>
-                <p className="text-lg text-gray-600">
-                  View your support tickets and submit new ones. Our team typically responds within 2 hours.
-                </p>
-              </div>
-
-              {/* Ticket List */}
-              <TicketList 
-                tickets={tickets} 
-                onSubmitTicket={() => setShowSubmitTicketModal(true)} 
-              />
+          <div className="max-w-5xl mx-auto">
+            {/* Header */}
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                Support Tickets
+              </h2>
+              <p className="text-lg text-gray-600">
+                View your support tickets and submit new ones. Our team typically responds within 2 hours.
+              </p>
             </div>
+
+            {/* Ticket List */}
+            <TicketList 
+              tickets={tickets} 
+              onSubmitTicket={() => setShowSubmitTicketModal(true)} 
+            />
           </div>
         )}
 
         {/* Customer Success Team Tab Content */}
         {activeTab === "customer-success" && (
-          <div className="py-8 space-y-12">
+          <div className="space-y-12">
             {/* Header - Center Aligned */}
             <div className="text-center max-w-3xl mx-auto">
               <h2 className="text-3xl font-bold text-gray-900 mb-3">

@@ -222,7 +222,7 @@ export default function PropertyAdvancedPage() {
         { label: "Advanced Details" },
       ]}
       footerNav={{
-        previousLabel: "← Back to Overview",
+        previousLabel: "Back to Overview",
         onPrevious: handleBack,
         nextLabel: "Save & Exit Edit Mode",
         onNext: handleContinue,
@@ -261,19 +261,6 @@ export default function PropertyAdvancedPage() {
           }
         }}
       >
-        {/* Stepper */}
-        <Stepper
-          currentStep={2}
-          totalSteps={2}
-          stepLabels={['Overview Fields', 'Advanced Details']}
-          onStepClick={(step) => {
-            if (step === 1) {
-              updateDefinitions({ propertyRecordFields: fields });
-              router.push('/definitions/properties/configure/overview');
-            }
-          }}
-        />
-
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
@@ -284,9 +271,9 @@ export default function PropertyAdvancedPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div>
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div>
             {/* Advanced Section */}
             <div className="bg-card border border-border rounded-xl overflow-hidden">
               <div className="p-6 border-b border-border flex items-center justify-between">
@@ -365,82 +352,6 @@ export default function PropertyAdvancedPage() {
               </div>
             </div>
 
-          </div>
-
-          {/* Right Column: Education Panel */}
-          <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-5 sticky top-20">
-              {/* Why We Need This */}
-              <div className="mb-4">
-                <h3 className="font-semibold text-foreground text-sm mb-2">Why We Need This</h3>
-                <p className="text-xs text-muted-foreground">
-                  Advanced fields capture additional property characteristics and specifications beyond basic identification. These help build comprehensive property records and support detailed appraisal requirements.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                {/* Video Tutorial */}
-                <div>
-                  <h4 className="font-medium text-foreground text-xs mb-2 flex items-center gap-1.5">
-                    <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Video Tutorial (3:45)
-                  </h4>
-                  <div className="relative w-full aspect-video bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400 rounded-lg overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <button className="w-14 h-14 bg-white/90 hover:bg-white rounded-full flex items-center justify-center transition-all hover:scale-110 shadow-lg" aria-label="Play video: Advanced Property Fields">
-                        <svg className="w-6 h-6 text-primary ml-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                      <p className="text-white text-xs font-medium">Advanced Property Fields</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div>
-                  <h4 className="font-medium text-foreground text-xs mb-2">Details</h4>
-                  <ul className="space-y-1.5 text-xs text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <svg className="w-3 h-3 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Property characteristics (bedrooms, bathrooms, sqft)
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-3 h-3 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Construction details (year built, foundation)
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-3 h-3 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      Lot information and additional notes
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Tips */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                    <div className="text-xs text-blue-900">
-                      <p className="font-semibold mb-1">Tip</p>
-                      <p>Hide fields you don't use to keep property records focused. You can always enable them later from this configuration page.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

@@ -98,72 +98,44 @@ export default function PropertyPreviewPage() {
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header with Edit Button */}
-        <div className="flex items-start justify-between mb-8 gap-4">
-          <div className="flex-1">
+            {/* Header with Edit Button */}
+            <div className="flex items-start justify-between mb-8 gap-4">
+              <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Property Record Configuration Preview
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 flex items-center gap-2 flex-wrap">
               {selectedTemplate ? (
                 <>
-                  Showing <strong>{selectedTemplate.name}</strong> template with <strong>{overviewFields.length + advancedFields.length} fields</strong>. 
-                  You can use this configuration as-is or customize it.
+                  <span>Showing</span>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-purple-100 text-purple-800">
+                    {selectedTemplate.name}
+                  </span>
+                  <span>template with</span>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-blue-100 text-blue-800">
+                    {overviewFields.length + advancedFields.length} fields
+                  </span>
+                  <span>• You can use this configuration as-is or customize it.</span>
                 </>
               ) : (
                 <>Preview of your property record fields. You can use this as-is or customize it.</>
               )}
             </p>
-          </div>
-          <button
-            onClick={handleEnterEditMode}
-            className="px-6 py-3 bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 flex-shrink-0"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Edit Configuration
-          </button>
-        </div>
-
-        {/* Template Info Banner */}
-        {selectedTemplate && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div className="text-sm text-blue-900">
-                <p className="font-semibold mb-1">{selectedTemplate.name} Template</p>
-                <p className="mb-2">{selectedTemplate.description} - {selectedTemplate.useCase}</p>
-                <p className="text-xs text-blue-800">
-                  💡 <strong>Tip:</strong> You can click on dropdown fields to expand and see the available options, even in preview mode!
-                </p>
               </div>
+              <button
+                onClick={handleEnterEditMode}
+                className="px-6 py-3 bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 flex-shrink-0"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Configuration
+              </button>
             </div>
-          </div>
-        )}
 
-        {/* Primary Property Information Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4 pb-2 border-b-2 border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">
-              Primary Property Information
-            </h2>
-            <span className="text-sm text-gray-600">
-              {state.definitions.propertyRecordFields.filter(f => f.category === 'overview' && f.enabled && ['street-address', 'apt-unit', 'city', 'state', 'zip-code', 'county', 'portfolio', 'portfolio-description'].includes(f.id)).length} fields
-            </span>
-          </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {state.definitions.propertyRecordFields
-              .filter(f => ['street-address', 'apt-unit', 'city', 'state', 'zip-code', 'county', 'portfolio', 'portfolio-description'].includes(f.id) && f.enabled)
-              .map(renderFieldPreview)}
-          </div>
-        </div>
-
-        {/* Property Overview Section */}
-        {overviewFields.length > 0 && (
-          <div className="mb-8">
+            {/* Property Overview Section */}
+            {overviewFields.length > 0 && (
+              <div className="mb-8">
             <div className="flex items-center justify-between mb-4 pb-2 border-b-2 border-gray-200">
               <h2 className="text-xl font-bold text-gray-900">
                 Property Overview
@@ -172,15 +144,15 @@ export default function PropertyPreviewPage() {
                 {overviewFields.length} fields
               </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {overviewFields.map(renderFieldPreview)}
-            </div>
-          </div>
-        )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {overviewFields.map(renderFieldPreview)}
+                </div>
+              </div>
+            )}
 
-        {/* Advanced Details Section */}
-        {advancedFields.length > 0 && (
-          <div className="mb-8">
+            {/* Advanced Details Section */}
+            {advancedFields.length > 0 && (
+              <div className="mb-8">
             <div className="flex items-center justify-between mb-4 pb-2 border-b-2 border-gray-200">
               <h2 className="text-xl font-bold text-gray-900">
                 Advanced Details
@@ -189,33 +161,33 @@ export default function PropertyPreviewPage() {
                 {advancedFields.length} fields
               </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {advancedFields.map(renderFieldPreview)}
-            </div>
-          </div>
-        )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {advancedFields.map(renderFieldPreview)}
+                </div>
+              </div>
+            )}
 
-        {/* Summary */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <div className="flex items-start gap-4">
-            <svg className="w-6 h-6 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <div className="flex-1">
-              <div className="font-semibold text-gray-900 mb-1">
-                Configuration Summary
+            {/* Summary */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <div className="flex items-start gap-4">
+                <svg className="w-6 h-6 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900 mb-1">
+                    Configuration Summary
+                  </div>
+                  <div className="text-sm text-gray-700 space-y-1">
+                    <p>• <strong>{overviewFields.length + advancedFields.length}</strong> total fields enabled</p>
+                    <p>• <strong>{[...overviewFields, ...advancedFields].filter(f => f.required).length}</strong> required fields</p>
+                    <p>• <strong>{[...overviewFields, ...advancedFields].filter(f => f.systemRequired).length}</strong> system fields</p>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-3">
+                    Ready to continue? Click "Continue to Request Types" below, or click "Edit Configuration" above to customize.
+                  </p>
+                </div>
               </div>
-              <div className="text-sm text-gray-700 space-y-1">
-                <p>• <strong>{overviewFields.length + advancedFields.length}</strong> total fields enabled</p>
-                <p>• <strong>{[...overviewFields, ...advancedFields].filter(f => f.required).length}</strong> required fields</p>
-                <p>• <strong>{[...overviewFields, ...advancedFields].filter(f => f.systemRequired).length}</strong> system fields</p>
-              </div>
-              <p className="text-xs text-gray-600 mt-3">
-                Ready to continue? Click "Continue to Request Types" below, or click "Edit Configuration" above to customize.
-              </p>
             </div>
-          </div>
-        </div>
       </div>
     </MainLayout>
   );
