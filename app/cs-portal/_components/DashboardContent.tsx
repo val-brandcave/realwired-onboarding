@@ -85,17 +85,31 @@ export function DashboardContent({ clients, onAddClient }: DashboardContentProps
   });
   
   // Prepare all clients table data
-  const allClientsTableData = clients.map(client => ({
-    id: client.id,
-    name: client.name,
-    initiationDate: new Date(client.initiationDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
-    status: client.status,
-    progress: client.progress,
-    trackingStatus: client.progress >= 50 ? 'On Track' : client.progress >= 30 ? 'At Risk' : 'Behind',
-    goLiveDate: new Date(client.projectedGoLiveDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
-    tickets: client.tickets,
-    assignees: ['Samuel Kite', 'Sarah Johnson', 'Mike Davis', 'Emily Chen'],
-  }));
+  const allClientsTableData = clients.map(client => {
+    // Calculate tracking status with proper type
+    let trackingStatus: 'On Track' | 'Behind' | 'At Risk' | 'On Hold';
+    if (client.status === 'On Hold') {
+      trackingStatus = 'On Hold';
+    } else if (client.progress >= 50) {
+      trackingStatus = 'On Track';
+    } else if (client.progress >= 30) {
+      trackingStatus = 'At Risk';
+    } else {
+      trackingStatus = 'Behind';
+    }
+    
+    return {
+      id: client.id,
+      name: client.name,
+      initiationDate: new Date(client.initiationDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+      status: client.status,
+      progress: client.progress,
+      trackingStatus,
+      goLiveDate: new Date(client.projectedGoLiveDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+      tickets: client.tickets,
+      assignees: ['Samuel Kite', 'Sarah Johnson', 'Mike Davis', 'Emily Chen'],
+    };
+  });
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
