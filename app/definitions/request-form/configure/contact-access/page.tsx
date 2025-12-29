@@ -342,7 +342,9 @@ export default function ContactAccessInfoPage() {
                       onDelete={() => handleDeleteField(field.id)}
                       onDragStart={handleDragStart}
                       onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
                       onDrop={() => handleDrop(field.id, 1)}
+                      isDragging={draggedFieldId === field.id}
                     />
                   ))}
                 </div>
@@ -357,7 +359,9 @@ export default function ContactAccessInfoPage() {
                       onDelete={() => handleDeleteField(field.id)}
                       onDragStart={handleDragStart}
                       onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
                       onDrop={() => handleDrop(field.id, 2)}
+                      isDragging={draggedFieldId === field.id}
                     />
                   ))}
                 </div>
