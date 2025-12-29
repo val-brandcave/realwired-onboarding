@@ -66,7 +66,7 @@ export function HubTabs({ activeTab, onTabChange }: HubTabsProps) {
 
   return (
     <div className="sticky top-14 z-30 border-b border-gray-200 bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="px-4 sm:px-6 lg:px-8">
         <nav className="flex space-x-8" aria-label="Tabs">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;

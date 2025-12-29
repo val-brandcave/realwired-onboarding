@@ -1,300 +1,149 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import Image from "next/image";
 
-type AuthTab = "customer" | "cs";
-type CustomerAuthFlow = "email" | "sso";
-type AuthStep = "email-input" | "otp-input";
-
-export default function Home() {
+export default function LandingPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<AuthTab>("customer");
-  const [customerFlow, setCustomerFlow] = useState<CustomerAuthFlow>("email");
-  const [authStep, setAuthStep] = useState<AuthStep>("email-input");
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [showCodeSent, setShowCodeSent] = useState(false);
 
-  const validateEmail = (email: string) => {
-    const hasAt = email.includes("@");
-    const hasDomain = email.split("@")[1]?.includes(".");
-    return hasAt && hasDomain;
-  };
-
-  const handleSendCode = (e: React.FormEvent) => {
-    e.preventDefault();
-    setEmailError("");
-    
-    if (!validateEmail(email)) {
-      setEmailError("Please enter a valid email address");
-      return;
-    }
-
-    // Show success message and transition to OTP input
-    setShowCodeSent(true);
-    setTimeout(() => {
-      setAuthStep("otp-input");
-      setShowCodeSent(false);
-    }, 800);
-  };
-
-  const handleVerifyOTP = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length === 6) {
-      router.push("/welcome");
-    }
-  };
-
-  const handleChangeEmail = () => {
-    setAuthStep("email-input");
-    setOtp("");
-  };
-
-  const handleResendCode = () => {
-    setShowCodeSent(true);
-    setTimeout(() => setShowCodeSent(false), 2000);
-  };
-
-  const handleCustomerSSO = () => {
-    // Returning customer - skip welcome
-    router.push("/hub");
-  };
-
-  const handleCSSSO = () => {
-    router.push("/cs-portal");
-  };
+  const roles = [
+    {
+      id: 'bank-admin',
+      title: 'Primary Onboarding Manager',
+      description: 'Configure and manage your bank\'s YouConnect setup',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      ),
+      route: '/sign-in/client',
+      color: 'from-[#9F2E2B] to-[#7D2522]',
+      hoverColor: 'hover:border-[#9F2E2B]',
+    },
+    {
+      id: 'cs-agent',
+      title: 'Customer Success Team Agent',
+      description: 'Manage and support client onboarding processes',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      route: '/sign-in/cs-agent',
+      color: 'from-blue-500 to-blue-600',
+      hoverColor: 'hover:border-blue-500',
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col">
-      {/* Main Content - Centered Card */}
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md">
-          {/* Sign-In Card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-            {/* Logo and Title */}
-            <div className="pt-8 pb-6 px-6 text-center">
-              <div className="inline-flex items-center justify-center mb-4">
-                <img 
-                  src="/realwired-logo.png" 
-                  alt="RealWired Logo" 
-                  className="w-12 h-12 object-contain"
-                />
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-1">YouConnect Onboarding</h1>
-              <p className="text-sm text-slate-600">
-                Secure access to onboarding and configuration
-              </p>
-            </div>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left Side - White */}
+      <div className="flex-1 lg:w-2/5 bg-white flex flex-col justify-center px-8 py-12 lg:px-16">
+        <div className="max-w-md mx-auto w-full">
+          {/* Logo */}
+          <div className="mb-8">
+            <img 
+              src="/realwired-logo.png" 
+              alt="RealWired Logo" 
+              className="h-12 w-auto object-contain"
+            />
+          </div>
 
-            {/* Segmented Control */}
-            <div className="px-6 mb-6">
-              <div className="bg-slate-100 p-1 rounded-lg flex gap-1">
-                <button
-                  onClick={() => setActiveTab("customer")}
-                  className={`flex-1 px-6 py-2.5 text-sm font-semibold rounded-md transition-all ${
-                    activeTab === "customer"
-                      ? "bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] text-white shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  Customer Access
-                </button>
-                <button
-                  onClick={() => setActiveTab("cs")}
-                  className={`flex-1 px-6 py-2.5 text-sm font-semibold rounded-md transition-all ${
-                    activeTab === "cs"
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  CS Team Access
-                </button>
-              </div>
-            </div>
+          {/* Heading */}
+          <h1 className="text-4xl font-bold text-[#7D2522] mb-3">
+            Welcome to
+          </h1>
+          <h2 className="text-3xl font-bold text-slate-900 mb-4">
+            YouConnect Onboarding
+          </h2>
+          
+          {/* Demo Notice */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 mb-8">
+            <p className="text-sm text-yellow-800 flex items-center gap-2">
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <span>This page is for prototype demo only</span>
+            </p>
+          </div>
 
-            {/* Tab Content */}
-            <div className="px-6 pb-6">
-              {/* Customer Tab */}
-              {activeTab === "customer" && (
-                <div className="space-y-5">
-                  {customerFlow === "email" && authStep === "email-input" && (
-                    <>
-                      {/* Email Input State */}
-                      <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
-                          Work email
-                        </label>
-                        <input
-                          id="email"
-                          type="email"
-                          value={email}
-                          onChange={(e) => {
-                            setEmail(e.target.value);
-                            setEmailError("");
-                          }}
-                          placeholder="name@company.com"
-                          className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] transition-all ${
-                            emailError ? "border-red-500" : "border-slate-300"
-                          }`}
-                        />
-                        {emailError && (
-                          <p className="mt-1.5 text-sm text-red-600">{emailError}</p>
-                        )}
-                        {showCodeSent && (
-                          <p className="mt-1.5 text-sm text-green-600 flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            Code sent to {email}
-                          </p>
-                        )}
-                      </div>
+          {/* Instruction */}
+          <p className="text-base text-slate-600 mb-8">
+            Select your role to continue to your workspace
+          </p>
 
-                      <button
-                        onClick={handleSendCode}
-                        className="w-full px-6 py-3 bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] text-white font-semibold rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md hover:shadow-lg"
-                      >
-                        Send access code
-                      </button>
-
-                      <button
-                        onClick={() => setCustomerFlow("sso")}
-                        className="w-full text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
-                      >
-                        Use Org SSO instead
-                      </button>
-                    </>
-                  )}
-
-                  {customerFlow === "email" && authStep === "otp-input" && (
-                    <>
-                      {/* OTP Input State */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-slate-900 mb-1">Enter access code</h3>
-                        <p className="text-sm text-slate-600 mb-4">
-                          We sent a 6-digit code to <span className="font-medium">{email}</span>
-                        </p>
-                        
-                        <input
-                          type="text"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          placeholder="000000"
-                          maxLength={6}
-                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9F2E2B] text-center text-2xl font-mono tracking-widest"
-                        />
-                        {showCodeSent && (
-                          <p className="mt-2 text-sm text-green-600 flex items-center gap-1 justify-center">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            Code resent
-                          </p>
-                        )}
-                      </div>
-
-                      <button
-                        onClick={handleVerifyOTP}
-                        disabled={otp.length !== 6}
-                        className="w-full px-6 py-3 bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] text-white font-semibold rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Verify & continue
-                      </button>
-
-                      <div className="flex items-center justify-center gap-4 text-sm">
-                        <button
-                          onClick={handleChangeEmail}
-                          className="text-slate-600 hover:text-slate-900 font-medium transition-colors"
-                        >
-                          Change email
-                        </button>
-                        <span className="text-slate-300">•</span>
-                        <button
-                          onClick={handleResendCode}
-                          className="text-slate-600 hover:text-slate-900 font-medium transition-colors"
-                        >
-                          Resend code
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                  {customerFlow === "sso" && (
-                    <>
-                      {/* Customer SSO Flow */}
-                      <div className="text-center py-4">
-                        <p className="text-sm text-slate-600 mb-6">
-                          Sign in with your organization's SSO provider to access your onboarding workspace.
-                        </p>
-                        
-                        <button
-                          onClick={handleCustomerSSO}
-                          className="w-full px-6 py-3 bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] text-white font-semibold rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] transition-all shadow-md hover:shadow-lg"
-                        >
-                          Continue with Org SSO
-                        </button>
-
-                        <button
-                          onClick={() => setCustomerFlow("email")}
-                          className="w-full mt-3 text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
-                        >
-                          ← Back to email access code
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* CS Team Tab */}
-              {activeTab === "cs" && (
-                <div className="space-y-5 py-2">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                      Customer Success Team Portal
+          {/* Role Cards */}
+          <div className="space-y-4">
+            {roles.map((role) => (
+              <button
+                key={role.id}
+                onClick={() => router.push(role.route)}
+                className={`
+                  w-full text-left p-5 bg-white border-2 border-slate-200 rounded-xl 
+                  hover:shadow-lg transition-all duration-200 group
+                  ${role.hoverColor}
+                `}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`
+                    w-12 h-12 bg-gradient-to-br ${role.color} 
+                    rounded-lg flex items-center justify-center text-white 
+                    flex-shrink-0 group-hover:scale-110 transition-transform
+                  `}>
+                    {role.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-slate-900 mb-1">
+                      {role.title}
                     </h3>
-                    <p className="text-sm text-slate-600 mb-6">
-                      Internal access for managing onboarding and configuration
+                    <p className="text-sm text-slate-600">
+                      {role.description}
                     </p>
                   </div>
-
-                  <button
-                    onClick={handleCSSSO}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
-                  >
-                    Continue with Org SSO
-                  </button>
-
-                  <p className="text-xs text-center text-slate-500">
-                    For approved CS team members only
-                  </p>
+                  <svg className="w-5 h-5 text-slate-400 group-hover:text-slate-600 group-hover:translate-x-1 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
-              )}
-            </div>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Footer with Demo Shortcuts */}
-      <footer className="w-full px-4 py-4 border-t border-slate-200 bg-white/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 flex-wrap text-sm text-slate-500">
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-slate-500">Shortcuts for prototype demo only</span>
+      {/* Right Side - RealWired Brand Color */}
+      <div className="flex-1 lg:w-3/5 bg-gradient-to-br from-[#7D2522] to-[#510906] flex flex-col items-center justify-center px-8 py-8 lg:px-16 text-white">
+        <div className="max-w-2xl text-center">
+          {/* Large Logo Icon */}
+          <div className="mb-12">
+            <div className="inline-flex items-center justify-center w-48 h-48 bg-white/10 rounded-full">
+              <img 
+                src="/realwired-logo.png" 
+                alt="RealWired" 
+                className="w-32 h-32 object-contain filter brightness-0 invert"
+              />
+            </div>
           </div>
+
+          {/* Tagline */}
+          <h2 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+            Streamlined Appraisal Management
+          </h2>
+        </div>
+      </div>
+
+      {/* Footer - Demo Shortcuts */}
+      <footer className="absolute bottom-0 left-0 right-0 lg:left-0 lg:right-auto lg:w-2/5 px-4 py-4 border-t border-slate-200 bg-white/90 backdrop-blur-sm">
+        <div className="max-w-md mx-auto flex items-center justify-center gap-3 flex-wrap text-xs text-slate-500">
+          <span>Quick demo access:</span>
           <button
             onClick={() => router.push("/hub")}
-            className="px-3 py-1.5 text-xs font-medium text-[#9F2E2B] hover:text-white hover:bg-[#9F2E2B] border border-[#9F2E2B] rounded-md transition-colors"
+            className="px-2 py-1 text-[#9F2E2B] hover:text-white hover:bg-[#9F2E2B] border border-[#9F2E2B] rounded transition-colors"
           >
-            Customer Onboarding
+            Hub
           </button>
           <button
             onClick={() => router.push("/cs-portal")}
-            className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-white hover:bg-blue-600 border border-blue-600 rounded-md transition-colors"
+            className="px-2 py-1 text-blue-600 hover:text-white hover:bg-blue-600 border border-blue-600 rounded transition-colors"
           >
             CS Portal
           </button>

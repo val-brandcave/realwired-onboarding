@@ -1,5 +1,7 @@
 "use client";
 
+import { ReactNode } from "react";
+
 export interface StickyFooterNavProps {
   // Previous button
   previousLabel?: string;
@@ -13,6 +15,13 @@ export interface StickyFooterNavProps {
   onNext?: () => void;
   nextDisabled?: boolean;
   nextTooltip?: string;
+
+  // Secondary action button (e.g., Edit Configuration)
+  secondaryAction?: {
+    label: string;
+    onClick: () => void;
+    icon?: ReactNode;
+  };
 }
 
 export function StickyFooterNav({
@@ -23,6 +32,7 @@ export function StickyFooterNav({
   onNext,
   nextDisabled = false,
   nextTooltip,
+  secondaryAction,
 }: StickyFooterNavProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-gray-200 shadow-lg">
@@ -43,13 +53,26 @@ export function StickyFooterNav({
             <div></div>
           )}
 
-          {/* Next Button */}
+          {/* Right side: Secondary Action + Next Button */}
           <div className="flex items-center gap-3">
             {nextTooltip && nextDisabled && (
               <span className="text-sm text-amber-600 font-medium">
                 {nextTooltip}
               </span>
             )}
+
+            {/* Secondary Action Button - Outlined style for medium emphasis */}
+            {secondaryAction && (
+              <button
+                onClick={secondaryAction.onClick}
+                className="px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 hover:border-[#9F2E2B] hover:text-[#9F2E2B] font-medium rounded-lg transition-all hover:shadow-md flex items-center gap-2"
+              >
+                {secondaryAction.icon}
+                <span>{secondaryAction.label}</span>
+              </button>
+            )}
+
+            {/* Next/Continue Button - Primary action with gradient */}
             <button
               onClick={onNext}
               disabled={nextDisabled}

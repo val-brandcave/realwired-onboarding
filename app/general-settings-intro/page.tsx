@@ -64,7 +64,7 @@ export default function GeneralSettingsIntroPage() {
 
           {/* CTA Button with brand color */}
           <button
-            onClick={() => router.push('/general-settings')}
+            onClick={() => router.push('/general-settings/system-workflow')}
             className="w-full py-3 px-6 text-base font-semibold text-white bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] rounded-lg hover:from-[#8A2826] hover:to-[#6B1F1D] focus:outline-none focus:ring-4 focus:ring-[#9F2E2B]/30 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] transform"
           >
             Let's Get Started! →

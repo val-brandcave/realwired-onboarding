@@ -8,88 +8,9 @@ export interface FieldTemplate {
   thumbnailUrl: string;
 }
 
-// Property Record Templates
-export const PROPERTY_TEMPLATES: FieldTemplate[] = [
-  {
-    id: 'standard-residential',
-    name: 'Standard Residential',
-    description: 'Essential fields for residential lending',
-    useCase: 'Best for single-family homes, condos, and townhouses',
-    fieldCount: 28,
-    thumbnailUrl: '/panel-screenshots/3-column-appraisal.png',
-    enabledFieldIds: [
-      // Primary Property Info (8 fields - all)
-      'street-address',
-      'apt-unit',
-      'city',
-      'state',
-      'zip-code',
-      'county',
-      'portfolio',
-      'portfolio-description',
-      
-      // Overview essentials (20 fields)
-      'property-category',
-      'property-type',
-      'assigned-area',
-      'bank',
-      'year-built',
-      'building-size',
-      'building-size-unit',
-      'site-area',
-      'site-area-unit',
-      'bedrooms',
-      'bathrooms',
-      'ownership-type',
-      'flood-zone',
-      'property-status',
-      'reg-b-dwelling',
-      'reg-b-first-mortgage',
-      'property-comments',
-      'active',
-      'photo',
-      'zoning-classification',
-    ],
-  },
-  {
-    id: 'commercial-focus',
-    name: 'Commercial Focus',
-    description: 'Commercial properties with extended details',
-    useCase: 'Best for commercial real estate, retail, and office buildings',
-    fieldCount: 38,
-    thumbnailUrl: '/panel-screenshots/4-column-appraisal.png',
-    enabledFieldIds: [
-      // All from Standard Residential (28 fields)
-      'street-address', 'apt-unit', 'city', 'state', 'zip-code', 'county', 'portfolio', 'portfolio-description',
-      'property-category', 'property-type', 'assigned-area', 'bank', 'year-built', 'building-size', 'building-size-unit',
-      'site-area', 'site-area-unit', 'bedrooms', 'bathrooms', 'ownership-type', 'flood-zone', 'property-status',
-      'reg-b-dwelling', 'reg-b-first-mortgage', 'property-comments', 'active', 'photo', 'zoning-classification',
-      
-      // Plus commercial-specific (10 more)
-      'number-of-tenants',
-      'excess-land',
-      'excess-land-unit',
-      'lot-number',
-      'block',
-      'subdivision',
-      'str',
-      'parcel-id',
-      'legal-description',
-      'multiple-building-description',
-    ],
-  },
-  {
-    id: 'full-service',
-    name: 'Full-Service',
-    description: 'All available fields enabled',
-    useCase: 'Maximum flexibility for all property types and complex scenarios',
-    fieldCount: 46,
-    thumbnailUrl: '/panel-screenshots/checkboxes-appraisal.png',
-    enabledFieldIds: [], // Empty array means enable all fields
-  },
-];
-
 // Request Form Templates
+// Note: Property records use ONE standard configuration (no templates)
+// Only request forms have template options
 export const REQUEST_TEMPLATES: FieldTemplate[] = [
   {
     id: 'basic-request',

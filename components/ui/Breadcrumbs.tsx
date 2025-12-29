@@ -17,7 +17,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
 
   return (
     <div className="sticky top-14 z-20 bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div className="px-4 sm:px-6 lg:px-8 py-3">
         <nav aria-label="Breadcrumb">
           <ol className="flex items-center space-x-2">
             {items.map((item, index) => {

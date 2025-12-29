@@ -168,7 +168,7 @@ export default function RequestFormOverviewPage() {
 
   const handleContinue = () => {
     updateDefinitions({ requestFormFields: fields });
-    router.push('/definitions/request-form/configure/advanced');
+    router.push('/definitions/request-form/configure/contact-access');
   };
 
   const handleExitEditMode = () => {
@@ -214,7 +214,7 @@ export default function RequestFormOverviewPage() {
       footerNav={{
         previousLabel: "Exit Edit Mode",
         onPrevious: handleExitEditMode,
-        nextLabel: "Continue to Advanced Details",
+        nextLabel: "Continue to Contact Info",
         onNext: handleContinue,
       }}
     >

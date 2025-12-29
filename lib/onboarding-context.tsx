@@ -14,11 +14,37 @@ export type OnboardingModule =
   | 'general-settings'
   | 'it-checklist';
 
-export type ModuleStatus = 'not_started' | 'in_progress' | 'completed';
+export type ModuleStatus = 'not_started' | 'in_progress' | 'blocked' | 'completed';
 
 export interface ModuleAssignment {
   moduleId: string;
   assignedParticipantIds: string[]; // IDs of assigned onboarding participants
+}
+
+// Detailed module status for hub kanban view
+export interface ModuleDetails {
+  id: OnboardingModule;
+  status: ModuleStatus;
+  progress: number; // 0-100
+  currentStep: number;
+  totalSteps: number;
+  assignedParticipants: string[]; // Participant IDs
+  targetDate?: string;
+  videoUrl?: string;
+  blockerReason?: string;
+  blockedDate?: string;
+}
+
+// Progress overview for dashboard
+export interface ProgressOverview {
+  toDoCount: number;
+  inProgressCount: number;
+  blockedCount: number;
+  completedCount: number;
+  overallProgress: number; // 0-100
+  daysLeft?: number;
+  goLiveDate?: string;
+  onTrackStatus: 'on-track' | 'at-risk' | 'critical';
 }
 
 // MODULE 1: Company Setup
@@ -168,7 +194,7 @@ export interface DefinitionsData {
   properties: PropertyDefinition[];
   propertyRecordFields: PropertyRecordField[]; // New: fields for property records
   selectedSamplePropertyId?: string; // New: which sample property was selected for preview
-  selectedPropertyTemplate?: string; // Template ID for property fields
+  // Note: No property template selection - YouConnect uses ONE standard property record
   propertyFieldsConfigured?: boolean; // Whether property fields have been configured
   requestFormFields: RequestFormField[]; // New: fields for request forms
   selectedSampleRequestId?: string; // New: which sample request was selected for preview
@@ -281,10 +307,83 @@ export interface BidEngagementPanel {
 }
 
 export interface GeneralSettingsData {
+  // Core Settings (existing)
   daysCalculation: 'business' | 'calendar';
   reviewApprovalRequired: boolean;
   timers: TimersSettings;
   bidEngagementPanel: BidEngagementPanel;
+  
+  // 1. Default Filters & Views (4 settings)
+  showNotSubmittedByDefault: boolean;
+  myItemsDefaultForBankAdmins: boolean;
+  enableDepartmentFilters: boolean;
+  addNotificationCopyToMyItems: boolean;
+  
+  // 2. Property & Data Configuration (2 settings)
+  enableParcelStateCounty: boolean;
+  includeSystemFeeInVendorQuotes: boolean;
+  
+  // 3. Workflow & Editing Permissions (3 settings)
+  enableEditOnHold: 'disabled' | 'jm_only' | 'jm_and_ba';
+  forbidLOEditAfterAcceptance: boolean;
+  enableReviewApproval: boolean;
+  
+  // 4. Dates & Notifications (2 settings)
+  enableEstimatedCompletionDate: boolean;
+  requireReviewDueDateAtAcceptance: boolean;
+  
+  // 5. Loan Officer Visibility (5 settings)
+  alwaysShowReportPanelsToLOs: boolean;
+  alwaysShowBidPanelsToLOs: boolean;
+  alwaysShowBankDocsToLOs: boolean;
+  allowLOsActAsJM: 'disabled' | 'selected_types';
+  allowLOsToClone: boolean;
+  
+  // 6. LO Bid Selection (3 settings)
+  enableLOBidSelection: boolean;
+  autoCheckDisplayToLOs: boolean;
+  requirePrepaymentProof: boolean;
+  
+  // 7. Default Field Population (1 setting)
+  defaultLOToOrderedBy: boolean;
+  
+  // 8. Request List View - All Users (1 setting)
+  additionalDetailsPopup: string[]; // ['vendorFee', 'reviewFee', 'mgmtFee', 'systemFee', 'totalFee']
+  
+  // 9. Request List View - LO Specific (1 setting)
+  hideEngagedFromLOs: string[]; // ['vendor', 'reviewer']
+  
+  // 10. LO Field Configuration (7 settings)
+  loCanSeeValueAsIs: boolean;
+  loCanSeeVBRPanel: boolean;
+  loCanSeeVendorGrades: boolean;
+  loCanSeeFeeQuote: boolean;
+  loCanSeeTotalFee: boolean;
+  loCanSeeViewSummary: boolean;
+  showFeeBreakdownToLO: boolean;
+  hideMgmtFeeInBreakdown: boolean;
+  
+  // 11. Vendor Webform Options (5 settings)
+  showRequestDocsOnSolicitation: boolean;
+  defaultDisplayToVendorSolicitation: boolean;
+  defaultDisplayToVendorEngagement: boolean;
+  allowVendorUploadInComments: boolean;
+  allowLOSelectDocs: boolean;
+  
+  // 12. Reviewer Webform Options (4 settings)
+  showBankDocsInternalReviewer: boolean;
+  showBankDocsExternalReviewer: boolean;
+  showRequestDocsInternalReviewer: boolean;
+  showRequestDocsExternalReviewer: boolean;
+  
+  // 13. Session Security (5 settings)
+  enableSessionTimer: boolean;
+  sessionTimeoutMinutes: number;
+  enableWarningPopup: boolean;
+  warningTimeMinutes: number;
+  enableSecondaryWarning: boolean;
+  secondaryWarningTimeMinutes: number;
+  
   completed: boolean;
 }
 
@@ -318,6 +417,7 @@ interface OnboardingState {
   moduleAssignments: ModuleAssignment[]; // NEW: Track which participants are assigned to each module
   moduleProgress: Record<string, ModuleProgress>; // NEW: Track progress for display in hub
   configuredSections: Record<string, SectionConfigStatus>; // NEW: Track CS agent configuration status per section
+  moduleBlockers: Record<OnboardingModule, { reason: string; blockedDate: string } | null>; // NEW: Track blocked modules
   projectedGoLiveDate?: string; // ISO date string - set by CS team
   initiationDate?: string; // ISO date string - when onboarding started
   productInterests: string[]; // NEW: Track which products the client is interested in
@@ -355,6 +455,14 @@ interface OnboardingContextType {
   getSectionConfigStatus: (sectionId: string) => SectionConfigStatus; // NEW: Get configuration status for a section
   expressProductInterest: (productId: string) => void; // NEW: Express interest in a product
   removeProductInterest: (productId: string) => void; // NEW: Remove interest in a product
+  
+  // Hub redesign methods
+  setModuleStatus: (moduleId: OnboardingModule, status: ModuleStatus) => void;
+  blockModule: (moduleId: OnboardingModule, reason: string) => void;
+  unblockModule: (moduleId: OnboardingModule) => void;
+  getModuleDetails: (moduleId: OnboardingModule) => ModuleDetails;
+  getAllModulesDetails: () => ModuleDetails[];
+  getProgressOverview: () => ProgressOverview;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -382,6 +490,15 @@ const initialState: OnboardingState = {
   ],
   moduleProgress: {}, // Initialize empty - will be populated as user progresses
   configuredSections: {}, // Initialize empty - will be populated as CS agents configure sections
+  moduleBlockers: {
+    'company-setup': null,
+    'definitions': null,
+    'users': null,
+    'vendors': null,
+    'routing': null,
+    'general-settings': null,
+    'it-checklist': null,
+  }, // Initialize all as unblocked
   productInterests: [], // Initialize empty - will be populated as user expresses interest
   projectedGoLiveDate: '2026-02-12', // Sample projected date - healthy timeline
   initiationDate: '2024-10-28', // Sample initiation date - recent start
@@ -716,6 +833,15 @@ const initialState: OnboardingState = {
       { id: 'contact-name', label: 'Contact Name', category: 'details', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Contact name', order: 39, column: 2 },
       { id: 'contact-phone', label: 'Contact Phone', category: 'details', type: 'tel', enabled: false, required: false, systemRequired: false, placeholder: '(555) 123-4567', order: 40, column: 2 },
       { id: 'contact-email', label: 'Contact Email', category: 'details', type: 'email', enabled: false, required: false, systemRequired: false, placeholder: 'contact@example.com', order: 41, column: 2 },
+      { id: 'contact-phone-2', label: 'Contact Phone 2', category: 'details', type: 'tel', enabled: false, required: false, systemRequired: false, placeholder: '(555) 123-4567', order: 42, column: 2 },
+      { id: 'list-price', label: 'List Price', category: 'details', type: 'number', enabled: false, required: false, systemRequired: false, placeholder: '550000', order: 43, column: 1 },
+      { id: 'sale-price', label: 'Sale Price', category: 'details', type: 'number', enabled: false, required: false, systemRequired: false, placeholder: '540000', order: 44, column: 2 },
+      { id: 'sale-date', label: 'Sale Date', category: 'details', type: 'date', enabled: false, required: false, systemRequired: false, order: 45, column: 1 },
+      { id: 'alternate-contact-type', label: 'Alternate Contact Type', category: 'details', type: 'select', enabled: false, required: false, systemRequired: false, options: ['Borrower', 'Property Manager', 'Seller', 'Tenant', 'Attorney', 'Real Estate Agent'], order: 46, column: 1 },
+      { id: 'alternate-contact-name', label: 'Alternate Contact Name', category: 'details', type: 'text', enabled: false, required: false, systemRequired: false, placeholder: 'Alternate contact name', order: 47, column: 1 },
+      { id: 'alternate-contact-phone', label: 'Alternate Contact Phone', category: 'details', type: 'tel', enabled: false, required: false, systemRequired: false, placeholder: '(555) 123-4567', order: 48, column: 1 },
+      { id: 'alternate-contact-email', label: 'Alternate Contact Email', category: 'details', type: 'email', enabled: false, required: false, systemRequired: false, placeholder: 'alternate@example.com', order: 49, column: 2 },
+      { id: 'alternate-contact-phone-2', label: 'Alternate Contact Phone 2', category: 'details', type: 'tel', enabled: false, required: false, systemRequired: false, placeholder: '(555) 123-4567', order: 50, column: 2 },
       
       // Bid/Engagement Fields - put in details  
       { id: 'desired-delivery-date', label: 'Desired Delivery Date', category: 'details', type: 'date', enabled: false, required: false, systemRequired: false, order: 42, column: 2 },
@@ -760,6 +886,7 @@ const initialState: OnboardingState = {
     completed: false,
   },
   generalSettings: {
+    // Core Settings (existing)
     daysCalculation: 'business',
     reviewApprovalRequired: true,
     timers: {
@@ -787,6 +914,79 @@ const initialState: OnboardingState = {
       ],
       readonly: true,
     },
+    
+    // NEW: 36 General Settings (defaults based on workbook recommendations)
+    // 1. Default Filters & Views
+    showNotSubmittedByDefault: false,
+    myItemsDefaultForBankAdmins: false,
+    enableDepartmentFilters: false,
+    addNotificationCopyToMyItems: true, // Recommended: Enable
+    
+    // 2. Property & Data Configuration
+    enableParcelStateCounty: false,
+    includeSystemFeeInVendorQuotes: false,
+    
+    // 3. Workflow & Editing Permissions
+    enableEditOnHold: 'disabled',
+    forbidLOEditAfterAcceptance: true, // Recommended: Enable
+    enableReviewApproval: false,
+    
+    // 4. Dates & Notifications
+    enableEstimatedCompletionDate: false,
+    requireReviewDueDateAtAcceptance: true, // Recommended: Enable
+    
+    // 5. Loan Officer Visibility
+    alwaysShowReportPanelsToLOs: false,
+    alwaysShowBidPanelsToLOs: false,
+    alwaysShowBankDocsToLOs: false,
+    allowLOsActAsJM: 'disabled',
+    allowLOsToClone: false,
+    
+    // 6. LO Bid Selection
+    enableLOBidSelection: true, // Recommended: Enable
+    autoCheckDisplayToLOs: false, // Recommended: Unchecked
+    requirePrepaymentProof: false,
+    
+    // 7. Default Field Population
+    defaultLOToOrderedBy: false, // Recommended: Do not auto-populate
+    
+    // 8. Request List View - All Users
+    additionalDetailsPopup: ['vendorFee', 'totalFee'], // Default visible fees
+    
+    // 9. Request List View - LO Specific
+    hideEngagedFromLOs: [], // Nothing hidden by default
+    
+    // 10. LO Field Configuration
+    loCanSeeValueAsIs: false,
+    loCanSeeVBRPanel: false,
+    loCanSeeVendorGrades: false,
+    loCanSeeFeeQuote: false,
+    loCanSeeTotalFee: false,
+    loCanSeeViewSummary: false,
+    showFeeBreakdownToLO: false,
+    hideMgmtFeeInBreakdown: false,
+    
+    // 11. Vendor Webform Options
+    showRequestDocsOnSolicitation: true, // Recommended: Enable
+    defaultDisplayToVendorSolicitation: false, // Recommended: Disable
+    defaultDisplayToVendorEngagement: false,
+    allowVendorUploadInComments: false,
+    allowLOSelectDocs: false,
+    
+    // 12. Reviewer Webform Options
+    showBankDocsInternalReviewer: false,
+    showBankDocsExternalReviewer: false,
+    showRequestDocsInternalReviewer: false,
+    showRequestDocsExternalReviewer: false,
+    
+    // 13. Session Security
+    enableSessionTimer: true, // Recommended: Enable (~30min)
+    sessionTimeoutMinutes: 30, // Recommended: 30 minutes
+    enableWarningPopup: false, // Optional
+    warningTimeMinutes: 5,
+    enableSecondaryWarning: false, // Optional
+    secondaryWarningTimeMinutes: 1,
+    
     completed: false,
   },
   itChecklist: {
@@ -1014,6 +1214,138 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  // Hub redesign methods
+  const setModuleStatus = useCallback((moduleId: OnboardingModule, status: ModuleStatus) => {
+    setState(prev => ({
+      ...prev,
+      moduleStatuses: {
+        ...prev.moduleStatuses,
+        [moduleId]: status,
+      },
+    }));
+  }, []);
+
+  const blockModule = useCallback((moduleId: OnboardingModule, reason: string) => {
+    setState(prev => ({
+      ...prev,
+      moduleStatuses: {
+        ...prev.moduleStatuses,
+        [moduleId]: 'blocked',
+      },
+      moduleBlockers: {
+        ...prev.moduleBlockers,
+        [moduleId]: {
+          reason,
+          blockedDate: new Date().toISOString(),
+        },
+      },
+    }));
+  }, []);
+
+  const unblockModule = useCallback((moduleId: OnboardingModule) => {
+    setState(prev => ({
+      ...prev,
+      moduleStatuses: {
+        ...prev.moduleStatuses,
+        [moduleId]: 'in_progress', // Return to in progress
+      },
+      moduleBlockers: {
+        ...prev.moduleBlockers,
+        [moduleId]: null,
+      },
+    }));
+  }, []);
+
+  const getModuleDetails = useCallback((moduleId: OnboardingModule): ModuleDetails => {
+    const progress = state.moduleProgress[moduleId];
+    const blocker = state.moduleBlockers[moduleId];
+    const assignment = state.moduleAssignments.find(a => a.moduleId === moduleId);
+    
+    return {
+      id: moduleId,
+      status: state.moduleStatuses[moduleId],
+      progress: calculateModuleProgressPercentage(moduleId),
+      currentStep: progress?.currentStep || 1,
+      totalSteps: progress?.totalSteps || 4,
+      assignedParticipants: assignment?.assignedParticipantIds || [],
+      targetDate: undefined, // TODO: Add target date tracking
+      videoUrl: '', // TODO: Add video URLs
+      blockerReason: blocker?.reason,
+      blockedDate: blocker?.blockedDate,
+    };
+  }, [state]);
+
+  const getAllModulesDetails = useCallback((): ModuleDetails[] => {
+    const moduleIds: OnboardingModule[] = [
+      'company-setup',
+      'definitions',
+      'users',
+      'vendors',
+      'routing',
+      'general-settings',
+      'it-checklist',
+    ];
+    
+    return moduleIds.map(id => getModuleDetails(id));
+  }, [getModuleDetails]);
+
+  const getProgressOverview = useCallback((): ProgressOverview => {
+    const modules = getAllModulesDetails();
+    
+    const toDoCount = modules.filter(m => m.status === 'not_started').length;
+    const inProgressCount = modules.filter(m => m.status === 'in_progress').length;
+    const blockedCount = modules.filter(m => m.status === 'blocked').length;
+    const completedCount = modules.filter(m => m.status === 'completed').length;
+    
+    // Calculate overall progress (weighted by completion)
+    const totalProgress = modules.reduce((sum, m) => sum + m.progress, 0);
+    const overallProgress = Math.round(totalProgress / modules.length);
+    
+    // Calculate on-track status
+    let onTrackStatus: 'on-track' | 'at-risk' | 'critical' = 'on-track';
+    if (blockedCount >= 2) {
+      onTrackStatus = 'critical';
+    } else if (blockedCount === 1 || overallProgress < 50) {
+      onTrackStatus = 'at-risk';
+    }
+    
+    // Calculate days left (if go-live date set)
+    let daysLeft: number | undefined;
+    if (state.projectedGoLiveDate) {
+      const today = new Date();
+      const goLive = new Date(state.projectedGoLiveDate);
+      const diffTime = goLive.getTime() - today.getTime();
+      daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+    
+    return {
+      toDoCount,
+      inProgressCount,
+      blockedCount,
+      completedCount,
+      overallProgress,
+      daysLeft,
+      goLiveDate: state.projectedGoLiveDate,
+      onTrackStatus,
+    };
+  }, [state, getAllModulesDetails]);
+
+  // Helper function to calculate module progress percentage
+  const calculateModuleProgressPercentage = (moduleId: OnboardingModule): number => {
+    const status = state.moduleStatuses[moduleId];
+    const progress = state.moduleProgress[moduleId];
+    
+    if (status === 'completed') return 100;
+    if (status === 'not_started') return 0;
+    
+    // For in_progress or blocked, calculate based on current step
+    if (progress && progress.totalSteps > 0) {
+      return Math.round((progress.currentStep / progress.totalSteps) * 100);
+    }
+    
+    return 0;
+  };
+
   const canProceed = useCallback((module: OnboardingModule): boolean => {
     const s = state;
     
@@ -1072,6 +1404,13 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         getSectionConfigStatus,
         expressProductInterest,
         removeProductInterest,
+        // Hub redesign methods
+        setModuleStatus,
+        blockModule,
+        unblockModule,
+        getModuleDetails,
+        getAllModulesDetails,
+        getProgressOverview,
       }}
     >
       {children}

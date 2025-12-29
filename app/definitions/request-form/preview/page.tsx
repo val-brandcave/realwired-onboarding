@@ -7,10 +7,14 @@ import { useOnboarding } from "@/lib/onboarding-context";
 import { REQUEST_TEMPLATES, getTemplateById } from "@/lib/field-templates";
 import type { RequestFormField } from "@/lib/onboarding-context";
 import { FormFieldPreview } from "@/components/property-config/FormFieldPreview";
+import { EditConfigModal } from "@/components/edit-config/EditConfigModal";
+import { RequestFormSection } from "@/components/edit-config/RequestFormSection";
 
 export default function RequestPreviewPage() {
   const router = useRouter();
   const { state, updateDefinitions } = useOnboarding();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingFields, setEditingFields] = useState<RequestFormField[]>([]);
 
   // Get selected template or default to 'basic-request'
   const selectedTemplateId = state.definitions.selectedRequestTemplate || 'basic-request';
@@ -38,21 +42,58 @@ export default function RequestPreviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTemplateId]); // Only run when template ID changes
 
-  // Get fields by category (request form uses category, not panel)
+  // Field IDs for different sections
+  const contactAccessFieldIds = [
+    'marketing-status', 'listing-agent', 'listing-phone', 'list-price', 'sale-price', 'sale-date',
+    'contact-type', 'contact-name', 'contact-phone', 'contact-email', 'contact-phone-2',
+    'alternate-contact-type', 'alternate-contact-name', 'alternate-contact-phone',
+    'alternate-contact-email', 'alternate-contact-phone-2',
+  ];
+
+  const bidPanelFieldIds = [
+    'bid-panel-selection', 'vendor-selection', 'bid-amount', 'bid-deadline'
+  ];
+
+  const reviewInfoFieldIds = [
+    'review-status', 'reviewer-assignment', 'review-deadline', 'approval-notes'
+  ];
+
+  // Get fields by category
   const overviewFields = state.definitions.requestFormFields.filter(f => f.category === 'overview' && f.enabled);
-  const detailsFields = state.definitions.requestFormFields.filter(f => f.category === 'details' && f.enabled);
+  const contactAccessFields = state.definitions.requestFormFields.filter(f => 
+    contactAccessFieldIds.includes(f.id) && f.enabled
+  );
+  const otherDetailsFields = state.definitions.requestFormFields.filter(f => 
+    f.category === 'details' && f.enabled && !contactAccessFieldIds.includes(f.id)
+  );
 
   const sections = [
     { id: 'overview', name: 'Request Overview', fields: overviewFields },
-    { id: 'details', name: 'Request Details', fields: detailsFields },
+    { id: 'contact-access', name: 'Contact & Access Info', fields: contactAccessFields },
+    { id: 'details', name: 'Additional Details', fields: otherDetailsFields },
   ];
 
-  const totalFields = overviewFields.length + detailsFields.length;
-  const requiredFields = [...overviewFields, ...detailsFields].filter(f => f.required).length;
+  const totalFields = overviewFields.length + contactAccessFields.length + otherDetailsFields.length;
+  const requiredFields = [...overviewFields, ...contactAccessFields, ...otherDetailsFields].filter(f => f.required).length;
 
   const handleEnterEditMode = () => {
-    // Navigate to overview edit page
-    router.push('/definitions/request-form/configure/overview');
+    // Initialize editing fields with current state
+    setEditingFields(state.definitions.requestFormFields);
+    setIsEditModalOpen(true);
+  };
+
+  const handleApplyChanges = () => {
+    // Save the edited fields to context
+    updateDefinitions({ 
+      requestFormFields: editingFields,
+      requestFieldsConfigured: true 
+    });
+  };
+
+  const handlePreview = () => {
+    // Close modal and scroll to top to show preview
+    setIsEditModalOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleContinue = () => {
@@ -101,12 +142,20 @@ export default function RequestPreviewPage() {
         onPrevious: () => router.push('/definitions/request-form/templates'),
         nextLabel: "Continue to Bid Panels",
         onNext: handleContinue,
+        secondaryAction: {
+          label: "Edit Configuration",
+          onClick: handleEnterEditMode,
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          ),
+        },
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Header with Edit Button */}
-            <div className="flex items-start justify-between mb-8 gap-4">
-              <div className="flex-1">
+            {/* Header */}
+            <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Request Form Configuration Preview
             </h1>
@@ -121,22 +170,12 @@ export default function RequestPreviewPage() {
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-blue-100 text-blue-800">
                     {totalFields} fields
                   </span>
-                  <span>• You can use this configuration as-is or customize it.</span>
+                  <span>• You can use this configuration as-is or customize it below.</span>
                 </>
               ) : (
-                <>Preview of your request form fields. You can use this as-is or customize it.</>
+                <>Preview of your request form fields. You can use this as-is or customize it below.</>
               )}
             </p>
-              </div>
-              <button
-                onClick={handleEnterEditMode}
-                className="px-6 py-3 bg-gradient-to-r from-[#9F2E2B] to-[#7D2522] text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 flex-shrink-0"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit Configuration
-              </button>
             </div>
 
             {/* Overview Section */}
@@ -156,19 +195,36 @@ export default function RequestPreviewPage() {
               </div>
             )}
 
-            {/* Details Section */}
-            {detailsFields.length > 0 && (
+            {/* Contact & Access Info Section */}
+            {contactAccessFields.length > 0 && (
               <div className="mb-8">
             <div className="flex items-center justify-between mb-4 pb-2 border-b-2 border-gray-200">
               <h2 className="text-xl font-bold text-gray-900">
-                Request Details
+                Contact & Access Info
               </h2>
               <span className="text-sm text-gray-600">
-                {detailsFields.length} fields
+                {contactAccessFields.length} fields
               </span>
             </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {detailsFields.map(renderFieldPreview)}
+                  {contactAccessFields.map(renderFieldPreview)}
+                </div>
+              </div>
+            )}
+
+            {/* Additional Details Section */}
+            {otherDetailsFields.length > 0 && (
+              <div className="mb-8">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b-2 border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">
+                Additional Details
+              </h2>
+              <span className="text-sm text-gray-600">
+                {otherDetailsFields.length} fields
+              </span>
+            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {otherDetailsFields.map(renderFieldPreview)}
                 </div>
               </div>
             )}
@@ -186,15 +242,82 @@ export default function RequestPreviewPage() {
                   <div className="text-sm text-gray-700 space-y-1">
                     <p>• <strong>{totalFields}</strong> total fields enabled</p>
                     <p>• <strong>{requiredFields}</strong> required fields</p>
-                    <p>• <strong>{[...overviewFields, ...detailsFields].filter(f => f.systemRequired).length}</strong> system fields</p>
+                    <p>• <strong>{[...overviewFields, ...contactAccessFields, ...otherDetailsFields].filter(f => f.systemRequired).length}</strong> system fields</p>
                   </div>
                   <p className="text-xs text-gray-600 mt-3">
-                    Ready to continue? Click "Continue to Bid Panels" below, or click "Edit Configuration" above to customize.
+                    Ready to continue? Click "Continue to Bid Panels" below, or click "Edit Configuration" to customize your fields.
                   </p>
                 </div>
               </div>
             </div>
       </div>
+
+      {/* Edit Configuration Modal */}
+      <EditConfigModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onApply={handleApplyChanges}
+        onPreview={handlePreview}
+        title="Edit Request Form Configuration"
+        sections={[
+          {
+            id: 'request-info',
+            title: 'Request Info',
+            description: 'Configure core request fields and property information',
+            component: (
+              <RequestFormSection
+                fields={editingFields}
+                onFieldsChange={setEditingFields}
+                sectionTitle="Request Information"
+                sectionDescription="Core request fields. Click a field to edit, drag to reorder."
+                category="overview"
+              />
+            ),
+          },
+          {
+            id: 'contact-access',
+            title: 'Contact Access',
+            description: 'Configure contact details and property access information',
+            component: (
+              <RequestFormSection
+                fields={editingFields}
+                onFieldsChange={setEditingFields}
+                sectionTitle="Contact & Access Information"
+                sectionDescription="Contact details and property access fields. Click a field to edit, drag to reorder."
+                filterFieldIds={contactAccessFieldIds}
+              />
+            ),
+          },
+          {
+            id: 'bid-panel',
+            title: 'Bid Panel',
+            description: 'Configure vendor bid and engagement panel settings',
+            component: (
+              <RequestFormSection
+                fields={editingFields}
+                onFieldsChange={setEditingFields}
+                sectionTitle="Bid/Engagement Panel"
+                sectionDescription="Vendor bid configuration fields. Click a field to edit, drag to reorder."
+                filterFieldIds={bidPanelFieldIds}
+              />
+            ),
+          },
+          {
+            id: 'review-info',
+            title: 'Review Info',
+            description: 'Configure review workflow and approval fields',
+            component: (
+              <RequestFormSection
+                fields={editingFields}
+                onFieldsChange={setEditingFields}
+                sectionTitle="Review Information"
+                sectionDescription="Review workflow fields. Click a field to edit, drag to reorder."
+                filterFieldIds={reviewInfoFieldIds}
+              />
+            ),
+          },
+        ]}
+      />
     </MainLayout>
   );
 }

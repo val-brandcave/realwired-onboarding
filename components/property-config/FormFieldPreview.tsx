@@ -33,19 +33,77 @@ const PLACEHOLDER_OPTIONS: Record<string, string[]> = {
 export function FormFieldPreview({ field }: FormFieldPreviewProps) {
   const fieldOptions = field.options || PLACEHOLDER_OPTIONS[field.id] || [];
   
-  // Helper function to generate sample value for readonly fields
+  // Helper function to get sample data for fields (per Ed's request - show data in action!)
   const getSampleValue = (fieldId: string, label: string): string => {
-    // Generate dummy values based on field type
-    const sampleValues: Record<string, string> = {
-      'request-id': '***RQ-24-' + Math.floor(Math.random() * 9000 + 1000),
-      'order-id': '***ORD-' + Math.floor(Math.random() * 90000 + 10000),
-      'property-id': '***PROP-' + Math.floor(Math.random() * 9000 + 1000),
-      'loan-number': '***' + Math.floor(Math.random() * 9000000000 + 1000000000),
-      'case-number': '***CASE-' + Math.floor(Math.random() * 90000 + 10000),
-      'tracking-number': '***TRK' + Math.floor(Math.random() * 900000000 + 100000000),
+    // Sample data for property fields
+    const propertySampleData: Record<string, string> = {
+      'street-address': '123 Main Street',
+      'apt-unit': 'Unit 4B',
+      'city': 'Chicago',
+      'state': 'IL',
+      'zip-code': '60601',
+      'county': 'Cook County',
+      'portfolio': 'Residential Lending',
+      'portfolio-description': 'Primary residential mortgage portfolio',
+      'year-built': '2010',
+      'building-size': '2,400',
+      'site-area': '0.25',
+      'bedrooms': '4',
+      'bathrooms': '2.5',
+      'zoning-classification': 'R-1 Single Family Residential',
+      'number-of-tenants': '1',
+      'excess-land': '0.1',
+      'lot-number': '42',
+      'block': '15',
+      'subdivision': 'Oak Park Estates',
+      'str': 'Section 12, Township 39N, Range 14E',
+      'parcel-id': '14-12-345-678-0000',
+      'legal-description': 'Lot 42 in Block 15 of Oak Park Estates Subdivision',
+      'multiple-building-description': 'Main residence with detached garage',
     };
+
+    // Sample data for request fields
+    const requestSampleData: Record<string, string> = {
+      'request-id': 'RQ-2024-0147',
+      'file-number': 'FILE-2024-0147',
+      'project-number': 'PROJ-2024-0147',
+      'order-id': 'ORD-45678',
+      'property-id': 'PROP-1234',
+      'loan-number': '4567890123',
+      'prior-loan-number': '3456789012',
+      'case-number': 'CASE-12345',
+      'tracking-number': 'TRK987654321',
+      'customer-name': 'John Smith',
+      'loan-amount': '$450,000',
+      'ltv-ratio': '80%',
+      'approved-ltv': '85%',
+      'billing-code': 'BC-1001',
+      'gl-account': 'GL-5500-1200',
+      'client-file-number': 'CF-2024-789',
+      'turn-time': '5',
+      'list-price': '$475,000',
+      'sale-price': '$462,500',
+      'contact-name': 'Sarah Johnson',
+      'contact-phone': '(555) 123-4567',
+      'contact-email': 'sarah.johnson@email.com',
+      'alternate-contact-name': 'Mike Davis',
+      'alternate-phone': '(555) 987-6543',
+      'alternate-email': 'mike.davis@email.com',
+      'lockbox-code': '#1234',
+      'hoa-contact': 'Oak Park HOA - (555) 555-5555',
+      'fee-quote': '$525',
+      'value-as-is': '$465,000',
+      'value-as-stabilized': '$475,000',
+      'value-as-completed': '$480,000',
+      'comparable-sales-count': '6',
+      'estimated-repair-cost': '$12,500',
+      'appraiser-license': 'IL-CG-123456',
+    };
+
+    // Combine both datasets
+    const allSampleData = { ...propertySampleData, ...requestSampleData };
     
-    return sampleValues[fieldId] || `***${Math.floor(Math.random() * 900000 + 100000)}`;
+    return allSampleData[fieldId] || `Sample ${label}`;
   };
   
   // Check if field is readonly or auto-generated
@@ -74,8 +132,8 @@ export function FormFieldPreview({ field }: FormFieldPreviewProps) {
         <input
           type="text"
           disabled
-          placeholder={field.placeholder || `e.g., Enter ${field.label?.toLowerCase()}`}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+          value={getSampleValue(field.id, field.label)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-not-allowed"
         />
       )}
 
@@ -101,8 +159,8 @@ export function FormFieldPreview({ field }: FormFieldPreviewProps) {
         <input
           type="email"
           disabled
-          placeholder={field.placeholder || "e.g., email@example.com"}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+          value={getSampleValue(field.id, field.label)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-not-allowed"
         />
       )}
 
@@ -110,17 +168,17 @@ export function FormFieldPreview({ field }: FormFieldPreviewProps) {
         <input
           type="tel"
           disabled
-          placeholder={field.placeholder || "e.g., (555) 123-4567"}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+          value={getSampleValue(field.id, field.label)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-not-allowed"
         />
       )}
 
       {field.type === 'number' && !isAutoGenerated && (
         <input
-          type="number"
+          type="text"
           disabled
-          placeholder={field.placeholder || "e.g., 0"}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+          value={getSampleValue(field.id, field.label)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-not-allowed"
         />
       )}
 
@@ -137,8 +195,8 @@ export function FormFieldPreview({ field }: FormFieldPreviewProps) {
         <input
           type="date"
           disabled
-          placeholder="e.g., MM/DD/YYYY"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+          value="2024-12-30"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-not-allowed"
         />
       )}
 
@@ -146,17 +204,18 @@ export function FormFieldPreview({ field }: FormFieldPreviewProps) {
         <textarea
           disabled
           rows={3}
-          placeholder={field.placeholder || `e.g., Enter ${field.label?.toLowerCase()}`}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed resize-none"
+          value={getSampleValue(field.id, field.label)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-not-allowed resize-none"
         />
       )}
 
       {field.type === 'select' && (
         <select
           disabled={false}
+          defaultValue={fieldOptions[0] || ""}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 cursor-pointer hover:border-[#9F2E2B] transition-colors"
         >
-          <option value="">Select {field.label?.toLowerCase()}</option>
+          {fieldOptions.length === 0 && <option value="">Select {field.label?.toLowerCase()}</option>}
           {fieldOptions.map((option, idx) => (
             <option key={idx} value={option}>
               {option}
