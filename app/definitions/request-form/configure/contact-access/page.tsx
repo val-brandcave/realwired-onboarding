@@ -344,7 +344,7 @@ export default function ContactAccessInfoPage() {
                       onDragEnd={handleDragEnd}
                       onDragOver={handleDragOver}
                       onDrop={() => handleDrop(field.id, 1)}
-                      isDragging={draggedFieldId === field.id}
+                      isDragging={draggingFieldId === field.id}
                     />
                   ))}
                 </div>
@@ -361,7 +361,7 @@ export default function ContactAccessInfoPage() {
                       onDragEnd={handleDragEnd}
                       onDragOver={handleDragOver}
                       onDrop={() => handleDrop(field.id, 2)}
-                      isDragging={draggedFieldId === field.id}
+                      isDragging={draggingFieldId === field.id}
                     />
                   ))}
                 </div>
@@ -375,19 +375,18 @@ export default function ContactAccessInfoPage() {
       {selectedField && (
         <FieldSettingsDrawer
           field={selectedField}
-          onUpdate={(updates) => handleFieldUpdate(selectedField.id, updates)}
+          onUpdate={(fieldId: string, updates: Record<string, unknown>) => handleFieldUpdate(fieldId, updates as Partial<RequestFormField>)}
           onClose={() => setSelectedFieldId(null)}
           onDelete={handleDeleteField}
         />
       )}
 
       {/* Add Field Modal */}
-      {isAddFieldModalOpen && (
-        <AddFieldModal
-          onAdd={handleAddField}
-          onClose={() => setIsAddFieldModalOpen(false)}
-        />
-      )}
+      <AddFieldModal
+        isOpen={isAddFieldModalOpen}
+        onAdd={handleAddField}
+        onClose={() => setIsAddFieldModalOpen(false)}
+      />
     </MainLayout>
   );
 }

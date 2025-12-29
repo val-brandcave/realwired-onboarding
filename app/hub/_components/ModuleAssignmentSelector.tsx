@@ -104,29 +104,29 @@ export function ModuleAssignmentSelector({ moduleId, isModule1Complete }: Module
               Assign Participants
             </div>
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {allParticipants.map((participant) => (
+              {allParticipants.filter(p => p !== null && p !== undefined).map((participant) => (
                 <label
-                  key={participant.id}
+                  key={participant!.id}
                   className="flex items-center gap-3 py-2 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
                 >
                   <input
                     type="checkbox"
-                    checked={assignedIds.includes(participant.id)}
-                    onChange={() => toggleParticipant(participant.id)}
+                    checked={assignedIds.includes(participant!.id)}
+                    onChange={() => toggleParticipant(participant!.id)}
                     className="w-4 h-4 text-[#9F2E2B] border-gray-300 rounded focus:ring-[#9F2E2B]"
                   />
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shadow-sm flex-shrink-0"
-                    style={{ backgroundColor: participant.avatarColor || getAvatarColor(participant.name) }}
+                    style={{ backgroundColor: participant!.avatarColor || getAvatarColor(participant!.name) }}
                   >
-                    {getInitials(participant.name)}
+                    {getInitials(participant!.name)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">
-                      {participant.name}
+                      {participant!.name}
                     </div>
                     <div className="text-xs text-gray-500 truncate">
-                      {participant.email}
+                      {participant!.email}
                     </div>
                   </div>
                 </label>

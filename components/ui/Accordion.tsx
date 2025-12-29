@@ -106,11 +106,12 @@ export function Accordion({
   // Clone children and inject props
   const childrenWithProps = React.Children.map(children, (child) => {
     if (React.isValidElement(child) && child.type === AccordionItem) {
-      return React.cloneElement(child, {
-        ...child.props,
-        isExpanded: expandedIds.includes(child.props.id),
+      const props = child.props as any;
+      return React.cloneElement(child as React.ReactElement<any>, {
+        ...props,
+        isExpanded: expandedIds.includes(props.id),
         onToggle: handleToggle,
-      } as any);
+      });
     }
     return child;
   });
